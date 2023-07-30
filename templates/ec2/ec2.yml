@@ -1,0 +1,27 @@
+# https://docs.aws.amazon.com/ja_jp/AWSCloudFormation/latest/UserGuide/quickref-ec2.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'EC2 Instance'
+Resources: 
+  DevEC2Instance: 
+    Type: 'AWS::EC2::Instance'
+    Properties: 
+      # image名が見つからないエラーが発生したらコンソール上のリージョンを確認すること
+      ImageId: ami-08c84d37db8aafe00
+      InstanceType: t2.micro
+      SecurityGroups:
+        # 定義したSSHSecurityGroupを参照させる
+        - !Ref SSHSecurityGroup
+  # https://docs.aws.amazon.com/ja_jp/AWSCloudFormation/latest/UserGuide/aws-properties-ec2-security-group.html
+  SSHSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SSH SG
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+  MyElasticIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref DevEC2Instance  
