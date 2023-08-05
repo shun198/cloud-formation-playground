@@ -158,6 +158,22 @@ UserData:
 
 # Metadata
 
+オプションの Metadata セクションを使用して、テンプレートの詳細を提供する任意の JSON または YAML オブジェクトを含めることができます
+
+```yml
+Metadata:
+  Instances:
+    Description: 'Information about the instances'
+  Databases:
+    Description: 'Information about the databases'
+```
+
+https://docs.aws.amazon.com/ja_jp/AWSCloudFormation/latest/UserGuide/metadata-section-structure.html
+
+# Nested Stack
+
+https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/using-cfn-nested-stacks.html
+
 # 組み込み関数
 
 AWS CloudFormation には、スタックの管理に役立ついくつかの組み込み関数が用意されています

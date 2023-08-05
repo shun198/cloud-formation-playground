@@ -1,0 +1,254 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "RDS Stack"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    # パラメータの並び順
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "RDS (PostgreSQL) Configuration"
+        Parameters:
+          - PostgreSQLMajorVersion
+          - PostgreSQLMinorVersion
+          - RDSDBInstanceClass
+          - RDSDBInstanceStorageSize
+          - RDSDBInstanceStorageType
+          - RDSDBName
+          - RDSDBMasterUserName
+          - RDSDBMasterUserPassword
+          - MultiAZEnabled
+          - RDSPrivateSubnet1
+          - RDSPrivateSubnet2
+          - RDSDBSecurityGroupID
+          - EnablePerformanceInsights
+          - BackupRetentionPeriod
+          - PreferredBackupWindow
+          - PreferredMaintenanceWindow
+          - AutoMinorVersionUpgradeEnabled
+          - DeletionProtectionEnabled
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name. (ex: cloud-formation-playground)"
+    Type: String
+    Default: cloud-formation-playground
+    ConstraintDescription: "ProjectName is required."
+    MinLength: 1
+  Environment:
+    Description: "Select the environment."
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment must be select."
+  PostgreSQLMajorVersion:
+    Description: "Select the PostgreSQL engine major version. (default: 15)"
+    Type: String
+    Default: 15
+    AllowedValues: [15]
+  PostgreSQLMinorVersion:
+    Description: "Select the PostgreSQL engine minor version."
+    Type: String
+    Default: 2
+    AllowedValues: [2]
+  RDSDBInstanceClass:
+    Description: "Select the DB Instance class. (default: db:t3.small)"
+    Type: String
+    Default: db.t3.small
+    AllowedValues:
+      - db.m5.large
+      - db.r5.large
+      - db.t3.micro
+      - db.t3.small
+      - db.t3.medium
+  RDSDBInstanceStorageSize:
+    Description: "Enter the DB Instance storage size. (default: 20 GiB)"
+    Type: String
+    Default: 20
+  RDSDBInstanceStorageType:
+    Description: "Enter the DB Instance storage type. (default: gp3)"
+    Type: String
+    Default: gp3
+    AllowedValues: [gp3, io1]
+  RDSDBName:
+    Description: "Enter the database name. (default: django-db)"
+    Type: String
+    Default: django-db
+  RDSDBMasterUserName:
+    Description: "Enter the master username."
+    Type: String
+    MinLength: 1
+    MaxLength: 16
+    AllowedPattern: "^[a-zA-Z][a-zA-Z_0-9]*"
+    ConstraintDescription: "Must begin with a letter and contain only alphanumeric characters."
+    NoEcho: true
+  RDSDBMasterUserPassword:
+    Description: "Enter the master password."
+    Type: String
+    MinLength: 10
+    MaxLength: 41
+    AllowedPattern: "^[a-zA-Z0-9]*"
+    ConstraintDescription: "Must contain only alphanumeric characters."
+    NoEcho: true
+  MultiAZEnabled:
+    Description: "Select whether you want to enable Multi-AZ or not. (default: false)"
+    Type: String
+    Default: false
+    AllowedValues: [true, false]
+  RDSPrivateSubnet1:
+    Description: "Enter the Subnet ID for RDS in the selected VPC."
+    Type: AWS::EC2::Subnet::Id
+  RDSPrivateSubnet2:
+    Description: "Enter the Subnet ID for RDS in the selected VPC."
+    Type: AWS::EC2::Subnet::Id
+  RDSDBSecurityGroupID:
+    Description: "Select the Security Group ID for RDS."
+    Type: AWS::EC2::SecurityGroup::Id
+  EnablePerformanceInsights:
+    Description: "Select whether to enable performance insights. (except t3.family)"
+    Type: String
+    Default: false
+    AllowedValues: [true, false]
+  BackupRetentionPeriod:
+    Description: "Select the backup retention period."
+    Type: String
+    Default: 35
+    AllowedValues: [0, 1, 3, 7, 14, 21, 30, 35]
+  PreferredBackupWindow:
+    Description: "Enter the time of day to perform backups, separated by 30 minutes. (format/UTC: hh24:mi-hh24:mi)"
+    Type: String
+    Default: 19:00-19:30
+  PreferredMaintenanceWindow:
+    Description: "Enter the time of day to perform maintenances, separated by 30 minutes. (format/UTC: ddd:hh24:mi-ddd:hh24:mi)"
+    Type: String
+    Default: sun:20:00-sun:20:30
+  AutoMinorVersionUpgradeEnabled:
+    Description: "Select whether to enable RDS DB Instance minor version auto upgrade."
+    Type: String
+    Default: true
+    AllowedValues: [true, false]
+  DeletionProtectionEnabled:
+    Description: "Select whether to enable deletion protection."
+    Type: String
+    Default: false
+    AllowedValues: [true, false]
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # DB SubnetGroup
+  # -------------------------------------
+  RDSDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupName: !Sub ${ProjectName}-${Environment}-rds-sbng
+      DBSubnetGroupDescription: !Sub ${ProjectName}-${Environment}-rds-sbng
+      SubnetIds:
+        - !Ref RDSPrivateSubnet1
+        - !Ref RDSPrivateSubnet2
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${Environment}-rds-sbng
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  
+  # -------------------------------------
+  # DB ParameterGroup
+  # -------------------------------------
+  RDSDBParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties:
+      Description: !Sub ${ProjectName}-${Environment}-rds-pg
+      Family: !Sub postgres${PostgreSQLMajorVersion}
+      Parameters:
+        log_duration: 1
+        log_min_duration_statement: 10000
+        log_statement: all
+        timezone: Asia/Tokyo
+  
+  # -------------------------------------
+  # DB OptionGroup
+  # -------------------------------------
+  RDSDBOptionGroup:
+    Type: AWS::RDS::OptionGroup
+    Properties:
+      EngineName: postgres
+      MajorEngineVersion: !Ref PostgreSQLMajorVersion
+      OptionGroupDescription: !Sub ${ProjectName}-${Environment}-rds-og
+      OptionGroupName: !Sub ${ProjectName}-${Environment}-rds-og
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${Environment}-rds-og
+        - Key: ProjectName
+          Value: !Sub ${ProjectName}
+        - Key: Environment
+          Value: !Sub ${Environment}
+
+  # -------------------------------------
+  # DB Instance
+  # -------------------------------------
+  RDSDBInstance:
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Type: AWS::RDS::DBInstance
+    Properties:
+      Engine: postgres
+      EngineVersion: !Sub ${PostgreSQLMajorVersion}.${PostgreSQLMinorVersion}
+      DBInstanceIdentifier: !Sub ${ProjectName}-${Environment}-rds
+      MasterUsername: !Ref RDSDBMasterUserName
+      MasterUserPassword: !Ref RDSDBMasterUserPassword
+      DBInstanceClass: !Ref RDSDBInstanceClass
+      StorageType: !Ref RDSDBInstanceStorageType
+      AllocatedStorage: !Ref RDSDBInstanceStorageSize
+      MultiAZ: !Ref MultiAZEnabled
+      DBSubnetGroupName: !Ref RDSDBSubnetGroup
+      PubliclyAccessible: false
+      VPCSecurityGroups:
+        - !Ref RDSDBSecurityGroupID
+      DBName: !Ref RDSDBName
+      DBParameterGroupName: !Ref RDSDBParameterGroup
+      OptionGroupName: !Ref RDSDBOptionGroup
+      BackupRetentionPeriod: !Ref BackupRetentionPeriod
+      PreferredBackupWindow: !Ref PreferredBackupWindow
+      CopyTagsToSnapshot: true
+      StorageEncrypted: true
+      EnablePerformanceInsights: !Ref EnablePerformanceInsights
+      MonitoringInterval: 60
+      EnableCloudwatchLogsExports: [postgresql]
+      AutoMinorVersionUpgrade: !Ref AutoMinorVersionUpgradeEnabled
+      PreferredMaintenanceWindow: !Ref PreferredMaintenanceWindow
+      DeletionProtection: !Ref DeletionProtectionEnabled
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${Environment}-rds
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+# ------------------------------------------------------------
+# Output
+# ------------------------------------------------------------
+Outputs:
+  RDSDBInstanceID:
+    Value: !Ref RDSDBInstance
+  RDSDBInstanceEndpoint:
+    Value: !GetAtt RDSDBInstance.Endpoint.Address
+  RDSDBName:
+    Value: !Ref RDSDBName

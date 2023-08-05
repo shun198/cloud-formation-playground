@@ -1,0 +1,357 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'VPC Stack'
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    # パラメータの並び順を記載
+    ParameterGroups:
+      - Label:
+          default: 'Project Configuration'
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: 'VPC Configuration'
+        Parameters:
+          - VPCCIDR
+          - ALBPublicSubnet1CIDR
+          - ALBPublicSubnet2CIDR
+          - ECSPublicSubnet1CIDR
+          - ECSPublicSubnet2CIDR
+          - RDSPrivateSubnet1CIDR
+          - RDSPrivateSubnet2CIDR
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Type: String
+    Description: 'Enter the project name. (ex: cloud-formation-playground)'
+    MinLength: 1
+    ConstraintDescription: 'ProjectName must be entered.'
+    Default: cloud-formation-playground
+  Environment:
+    Type: String
+    Description: 'Select a environment name.'
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: 'Environment must be selected.'
+  VPCCIDR:
+    Type: String
+    Description: 'Enter the VPC CIDR block. (ex: 10.0.0.0/16)'
+  ALBPublicSubnet1CIDR:
+    Type: String
+    Description: 'Enter the subnet CIDR block for ALB in the 1st availability zone. (ex: 10.0.0.0/24)'
+  ALBPublicSubnet2CIDR:
+    Type: String
+    Description: 'Enter the subnet CIDR block for ALB in the 2nd availability zone. (ex: 10.0.1.0/24)'
+  ECSPublicSubnet1CIDR:
+    Type: String
+    Description: 'Enter the subnet CIDR block for ECS in the 1st availability zone. (ex: 10.0.2.0/24)'
+  ECSPublicSubnet2CIDR:
+    Type: String
+    Description: 'Enter the subnet CIDR block for ECS in the 2nd availability zone. (ex: 10.0.3.0/24)'
+  RDSPrivateSubnet1CIDR:
+    Type: String
+    Description: 'Enter the subnet CIDR block for RDS in the 1st availability zone. (ex: 10.0.4.0/24)'
+  RDSPrivateSubnet2CIDR:
+    Type: String
+    Description: 'Enter the subnet CIDR block for RDS in the 2nd availability zone. (ex: 10.0.5.0/24)'
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # VPC
+  # -------------------------------------
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VPCCIDR
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${Environment}-vpc
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # -------------------------------------
+  # Public Subnet
+  # -------------------------------------
+  # for ALB
+  ALBPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref ALBPublicSubnet1CIDR
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value:
+            !Join [
+              '-',
+              [
+                !Sub '${ProjectName}-${Environment}-public-alb',
+                !Select [2, !Split ['-', !Select [0, !GetAZs '']]],
+              ],
+            ]
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  ALBPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref ALBPublicSubnet2CIDR
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value:
+            !Join [
+              '-',
+              [
+                !Sub '${ProjectName}-${Environment}-public-alb',
+                !Select [2, !Split ['-', !Select [1, !GetAZs '']]],
+              ],
+            ]
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # for ECS
+  ECSPublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref ECSPublicSubnet1CIDR
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value:
+            !Join [
+              '-',
+              [
+                !Sub '${ProjectName}-${Environment}-public-ecs',
+                !Select [2, !Split ['-', !Select [0, !GetAZs '']]],
+              ],
+            ]
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  ECSPublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref ECSPublicSubnet2CIDR
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value:
+            !Join [
+              '-',
+              [
+                !Sub '${ProjectName}-${Environment}-public-ecs',
+                !Select [2, !Split ['-', !Select [1, !GetAZs '']]],
+              ],
+            ]
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # -------------------------------------
+  # Private Subnet
+  # -------------------------------------
+  # for RDS
+  RDSPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      CidrBlock: !Ref RDSPrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value:
+            !Join [
+              '-',
+              [
+                !Sub '${ProjectName}-${Environment}-private-rds',
+                !Select [2, !Split ['-', !Select [0, !GetAZs '']]],
+              ],
+            ]
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  RDSPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs ]
+      CidrBlock: !Ref RDSPrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value:
+            !Join [
+              '-',
+              [
+                !Sub '${ProjectName}-${Environment}-private-rds',
+                !Select [2, !Split ['-', !Select [1, !GetAZs '']]],
+              ],
+            ]
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # -------------------------------------
+  # Internet Gateway
+  # -------------------------------------
+  VPCIGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${Environment}-igw
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  VPCIGWAttach:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref VPCIGW
+      VpcId: !Ref VPC
+
+  # -------------------------------------
+  # Public Route Table
+  # -------------------------------------
+  # for ALB
+  ALBPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${Environment}-public-alb-rtb
+  ALBPublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref VPCIGW
+      RouteTableId: !Ref ALBPublicRouteTable
+  ALBPublicSubnet1Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref ALBPublicRouteTable
+      SubnetId: !Ref ALBPublicSubnet1
+  ALBPublicSubnet2Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref ALBPublicRouteTable
+      SubnetId: !Ref ALBPublicSubnet2
+
+  # for ECS
+  ECSPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${Environment}-public-ecs-rtb
+  ECSPublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref ECSPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref VPCIGW
+  ECSPublicSubnet1Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref ECSPublicRouteTable
+      SubnetId: !Ref ECSPublicSubnet1
+  ECSPublicSubnet2Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref ECSPublicRouteTable
+      SubnetId: !Ref ECSPublicSubnet2
+
+  # -------------------------------------
+  # Private Route Table
+  # -------------------------------------
+  # for RDS
+  RDSPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${Environment}-private-rds-rtb
+  RDSPrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RDSPrivateRouteTable
+      SubnetId: !Ref RDSPrivateSubnet1
+  RDSPrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RDSPrivateRouteTable
+      SubnetId: !Ref RDSPrivateSubnet2
+
+  # -------------------------------------
+  # Security Group
+  # -------------------------------------
+  # インバウンドルールを許可しないセキュリティグループの作成
+  NoIngressSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: no-ingress-sg
+      GroupDescription: 'Security group with no ingress rule.'
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: no-ingress-sg
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  VPCID:
+    Value: !Ref VPC
+  ALBPublicSubnet1:
+    Value: !Ref ALBPublicSubnet1
+  ALBPublicSubnet2:
+    Value: !Ref ALBPublicSubnet2
+  ECSPublicSubnet1:
+    Value: !Ref ECSPublicSubnet1
+  ECSPublicSubnet2:
+    Value: !Ref ECSPublicSubnet2
+  RDSPrivateSubnet1:
+    Value: !Ref RDSPrivateSubnet1
+  RDSPrivateSubnet2:
+    Value: !Ref RDSPrivateSubnet2
+  NoIngressSecurityGroup:
+    Description: 'Security group with no ingress rule.'
+    Value: !Ref NoIngressSecurityGroup
