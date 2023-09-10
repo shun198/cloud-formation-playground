@@ -1,0 +1,92 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "CloudWatch Logs Stack For Backend"
+
+# -------------------------------------
+# Mappings
+# -------------------------------------
+Mappings:
+  # ロググループの保持期間
+  RetentionInDaysMap:
+    Environment:
+      dev: 30
+      stg: 60
+      prd: 90
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    # パラメータの並び順
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "CloudWatch Logs Configuration for ECS"
+        Parameters:
+          - AppLogGroupName
+          - WebLogGroupName
+
+# -------------------------------------
+# Input parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name. (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter."
+    Default: my-project
+  Environment:
+    Description: "Select the environment."
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment must be select."
+  AppLogGroupName:
+    Description: "CloudWatch Logs log-group name for application. (ex: /ecs/my-project/<environment>/back/django)"
+    Type: String
+  WebLogGroupName:
+    Description: "CloudWatch Logs log-group name for webserver. (ex: /ecs/my-project/<environment>/back/nginx)"
+    Type: String
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # CloudWatchLogs LogGroup
+  # -------------------------------------
+  # for application
+  LogGroupForApp:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref AppLogGroupName
+      RetentionInDays:
+        !FindInMap [RetentionInDaysMap, Environment, !Ref Environment]
+      Tags:
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  # for webserver
+  LogGroupForWeb:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref WebLogGroupName
+      RetentionInDays:
+        !FindInMap [RetentionInDaysMap, Environment, !Ref Environment]
+      Tags:
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment

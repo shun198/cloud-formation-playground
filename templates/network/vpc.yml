@@ -46,31 +46,31 @@ Parameters:
   VPCCIDR:
     Description: "Please type the VPC CIDR."
     Type: String
-    Default: 192.168.0.0/16
+    Default: 10.0.0.0/16
   ELBPublicSubnet1CIDR:
     Description: "Please type the ELB Public Subnet 1 CIDR."
     Type: String
-    Default: 192.168.0.0/24
+    Default: 10.0.1.0/24
   ELBPublicSubnet2CIDR:
     Description: "Please type the ELB Public Subnet 2 CIDR."
     Type: String
-    Default: 192.168.1.0/24
+    Default: 10.0.2.0/24
   ECSPublicSubnet1CIDR:
     Description: "Please type the ECS Public Subnet 1 CIDR."
     Type: String
-    Default: 192.168.2.0/24
+    Default: 10.0.3.0/24
   ECSPublicSubnet2CIDR:
     Description: "Please type the ECS Public Subnet 2 CIDR."
     Type: String
-    Default: 192.168.3.0/24
+    Default: 10.0.4.0/24
   RDSPrivateSubnet1CIDR:
     Description: "Please type the RDS Private Subnet 1 CIDR."
     Type: String
-    Default: 192.168.4.0/24
+    Default: 10.0.5.0/24
   RDSPrivateSubnet2CIDR:
     Description: "Please type the RDS Private Subnet 2 CIDR."
     Type: String
-    Default: 192.168.5.0/24
+    Default: 10.0.6.0/24
 
 # -------------------------------------
 # Resources
@@ -88,7 +88,7 @@ Resources:
       # EnableDnsSupport: true
       Tags:
         - Key: Name
-          Value: VPC
+          Value: !Sub ${ProjectName}-${Environment}-vpc
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
