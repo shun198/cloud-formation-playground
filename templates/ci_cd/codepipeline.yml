@@ -1,0 +1,532 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "CodePipeline Stack For Backend (ECS Fargate) Stack"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    # パラメータの並び順
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "GitHub Configuration"
+        Parameters:
+          - BackEndRepositoryName
+          - SourceBranchName
+          - DjangoDockerfilePath
+          - NginxDockerfilePath
+          - TaskDefinitionTemplatePath
+          - AppSpecTemplatePath
+      - Label:
+          default: "CodeBuild Configuration"
+        Parameters:
+          - ECRBackEndDjangoRepositoryName
+          - ECRBackEndNginxRepositoryName
+      - Label:
+          default: "CodeDeploy Configuration"
+        Parameters:
+          - CodeDeployApplicationName
+          - CodeDeployDeploymentGroupName
+          - CodeDeployDeploymentConfigName
+          - ECSClusterName
+          - ECSServiceName
+          - ALBTargetGroupBlueName
+          - ALBTargetGroupGreenName
+          - ALBProductionListenerArn
+          - ALBTestListenerArn
+      - Label:
+          default: "CodePipeline Configuration"
+        Parameters:
+          - CodeStarConnectionArn
+
+# -------------------------------------
+# Conditions
+# -------------------------------------
+Conditions:
+  # CodePipeline ブランチ更新トリガー制御用
+  IsEnvPrd: !Equals [!Ref Environment, prd]
+
+# -------------------------------------
+# Input parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name. (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter."
+    Default: my-project
+  Environment:
+    Description: "Select the environment."
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment must be select."
+  BackEndRepositoryName:
+    Description: "Enter the target GitHub backend full repository name. (ex: organization/my-project)"
+    Type: String
+    Default: organization/my-project
+  SourceBranchName:
+    Description: "Enter the source branch name in GitHub backend repository. (ex: develop or main)"
+    Type: String
+  DjangoDockerfilePath:
+    Description: "Enter the Django Dockerfile path in GitHub backend repository. (ex: containers/django/Dockerfile.dev)"
+    Type: String
+  NginxDockerfilePath:
+    Description: "Enter the Nginx Dockerfile path in GitHub backend repository. (ex: containers/nginx/Dockerfile.dev)"
+    Type: String
+  TaskDefinitionTemplatePath:
+    Description: "Enter the ECS Task Definition template path in GitHub backend repository. (ex: ecs/taskdef.dev.json)"
+    Type: String
+  AppSpecTemplatePath:
+    Description: "Enter the Codedeploy Appspec template path in GitHub backend repository. (ex: codedeploy/appspec.yml)"
+    Type: String
+  ECRBackEndDjangoRepositoryName:
+    Description: "Enter the ECR backend application repository name. (ex: my-project/dev/back/django)"
+    Type: String
+  ECRBackEndNginxRepositoryName:
+    Description: "Enter the ECR backend webserver repository name. (ex: my-project/dev/back/nginx)"
+    Type: String
+  CodeDeployApplicationName:
+    Description: "Enter the CodeDeploy application name. (ex: my-project-dev-cdapp)"
+    Type: String
+  CodeDeployDeploymentGroupName:
+    Description: "Enter the CodeDeploy deployment group name. (ex: my-project-dev-cdg)"
+    Type: String
+  CodeDeployDeploymentConfigName:
+    Description: "Enter the CodeDeploy deployment config name."
+    Type: String
+    AllowedValues:
+      - CodeDeployDefault.ECSLinear10PercentEvery1Minutes
+      - CodeDeployDefault.ECSLinear10PercentEvery3Minutes
+      - CodeDeployDefault.ECSCanary10Percent5Minutes
+      - CodeDeployDefault.ECSCanary10Percent15Minutes
+      - CodeDeployDefault.ECSAllAtOnce
+  ECSClusterName:
+    Description: "Enter the ECS cluster name. (ex: my-project-dev-cluster)"
+    Type: String
+  ECSServiceName:
+    Description: "Enter the ECS cluster name. (ex: my-project-dev-back-service)"
+    Type: String
+  ALBTargetGroupBlueName:
+    Description: "Enter the ALB Target Group Name for Blue / Green Deployment. (ex: my-project-dev-tg-blue)"
+    Type: String
+  ALBTargetGroupGreenName:
+    Description: "Enter the ALB Target Group Name for Blue / Green Deployment. (ex: my-project-dev-tg-green)"
+    Type: String
+  ALBProductionListenerArn:
+    Description: "Enter the ALB Production Listener ARN for Blue / Green Deployment."
+    Type: String
+  ALBTestListenerArn:
+    Description: "Enter the ALB Test Listener ARN for Blue / Green Deployment."
+    Type: String
+  CodeStarConnectionArn:
+    Description: "Enter the CodeStar connection ARN. (ex: arn:aws:codestar-connections:<aws_region>:<aws_account_id>:connection/<connection_id>)"
+    Type: String
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # IAM
+  # -------------------------------------
+  # CodeBuild 用の IAM Policy
+  CodeBuildServiceRolePolicy:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub CodeBuildServiceRolePolicyForBackEnd-${ProjectName}-${Environment}
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource:
+              - !Sub
+                - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${CodeBuildProjectName}
+                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-back-cbpj" }
+              - !Sub
+                - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${CodeBuildProjectName}:*
+                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-back-cbpj" }
+          - Effect: Allow
+            Action:
+              - s3:GetBucketAcl
+              - s3:GetBucketLocation
+            Resource: !Sub arn:aws:s3:::${ArtifactBucket}*
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:GetObject
+              - s3:GetObjectVersion
+            Resource: !Sub arn:aws:s3:::${ArtifactBucket}/*
+          - Effect: Allow
+            Action:
+              - codebuild:CreateReportGroup
+              - codebuild:CreateReport
+              - codebuild:UpdateReport
+              - codebuild:BatchPutTestCases
+              - codebuild:BatchPutCodeCoverages
+            Resource: !Sub
+              - arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/${CodeBuildProjectName}*
+              - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-back-cbpj" }
+          - Effect: Allow
+            Action:
+              - codebuild:StartBuild
+              - codebuild:StopBuild
+              - codebuild:RetryBuild
+            Resource: !Sub
+              - arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CodeBuildProjectName}
+              - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-back-cbpj" }
+          - Effect: Allow
+            Action:
+              - ecr:GetAuthorizationToken
+              - ecr:BatchCheckLayerAvailability
+              - ecr:GetDownloadUrlForLayer
+              - ecr:GetRepositoryPolicy
+              - ecr:DescribeRepositories
+              - ecr:ListImages
+              - ecr:DescribeImages
+              - ecr:BatchGetImage
+              - ecr:GetLifecyclePolicy
+              - ecr:GetLifecyclePolicyPreview
+              - ecr:ListTagsForResource
+              - ecr:DescribeImageScanFindings
+              - ecr:InitiateLayerUpload
+              - ecr:UploadLayerPart
+              - ecr:CompleteLayerUpload
+              - ecr:PutImage
+            Resource: "*"
+
+  # CodeBuild に適用する IAM Role
+  CodeBuildServiceRole:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub CodeBuildServiceRoleForBackEnd-${ProjectName}-${Environment}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /service-role/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - !Ref CodeBuildServiceRolePolicy
+
+  # CodeDeploy Blue/Green Deployment 用 IAM Role
+  CodeDeployServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub CodeDeployServiceRoleForBackEnd-${ProjectName}-${Environment}
+      Path: /service-role/
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codedeploy.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSCodeDeployRoleForECS
+
+  # CodePipeline 用の IAM Policy
+  CodePipelineServiceRolePolicy:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub CodePipelineServiceRolePolicyForBackEnd-${ProjectName}-${Environment}
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          # アクセス許可はデプロイ対象リソースに応じて変更する
+          - Effect: Allow
+            Action:
+              - iam:PassRole
+            Condition:
+              StringEqualsIfExists:
+                iam:PassedToService:
+                  - ecs-tasks.amazonaws.com
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - s3:*
+            Resource:
+              - !Sub arn:aws:s3:::${ArtifactBucket}*
+          - Effect: Allow
+            Action:
+              - codedeploy:CreateDeployment
+              - codedeploy:GetApplication
+              - codedeploy:GetApplicationRevision
+              - codedeploy:GetDeployment
+              - codedeploy:GetDeploymentConfig
+              - codedeploy:RegisterApplicationRevision
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - codestar-connections:UseConnection
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - codebuild:BatchGetBuilds
+              - codebuild:StartBuild
+              - codebuild:BatchGetBuildBatches
+              - codebuild:StartBuildBatch
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - ecr:DescribeImages
+              - ecs:RegisterTaskDefinition
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - sns:Publish
+            Resource: "*"
+
+  # CodePipeline に適用する IAM Role
+  CodePipelineServiceRole:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub CodePipelineServiceRoleForBackEnd-${ProjectName}-${Environment}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /service-role/
+      ManagedPolicyArns:
+        - !Ref CodePipelineServiceRolePolicy
+
+  # -------------------------------------
+  # S3 Bucket
+  # -------------------------------------
+  # For CodePipeline Artifact
+  ArtifactBucket:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${ProjectName}-${Environment}-back-artifact
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # -------------------------------------
+  # CodeBuild
+  # -------------------------------------
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${ProjectName}-${Environment}-back-cbpj
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      BuildBatchConfig:
+        ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          batch:
+            build-list:
+              - identifier: BuildBackEndDjangoArtifact
+                buildspec: codebuild/buildspec_django.yml
+              - identifier: BuildBackEndNginxArtifact
+                buildspec: codebuild/buildspec_nginx.yml
+      Environment:
+        PrivilegedMode: true
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_ACCOUNT
+            Value: !Ref AWS::AccountId
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: DOCKER_BUILDKIT
+            Value: 1
+          - Name: DOCKERHUB_TOKEN
+            Type: PARAMETER_STORE
+            Value: !Sub /${ProjectName}/common/DOCKERHUB_TOKEN
+          - Name: DOCKERHUB_USER
+            Type: PARAMETER_STORE
+            Value: !Sub /${ProjectName}/common/DOCKERHUB_USER
+          - Name: ECR_DJANGO_REPOSITORY_URI
+            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRBackEndDjangoRepositoryName}
+          - Name: ECR_NGINX_REPOSITORY_URI
+            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRBackEndNginxRepositoryName}
+          - Name: ENVIRONMENT
+            Value: !Ref Environment
+          - Name: DJANGO_DOCKERFILE_PATH
+            Value: !Ref DjangoDockerfilePath
+          - Name: NGINX_DOCKERFILE_PATH
+            Value: !Ref NginxDockerfilePath
+          - Name: PROJECT_NAME
+            Value: !Ref ProjectName
+  # -------------------------------------
+  # CodeDeploy
+  # -------------------------------------
+  CodeDeployApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: !Ref CodeDeployApplicationName
+      ComputePlatform: ECS
+      Tags:
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  CodeDeployDeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName: !Ref CodeDeployApplication
+      AutoRollbackConfiguration:
+        Enabled: true
+        Events:
+          - DEPLOYMENT_FAILURE
+      BlueGreenDeploymentConfiguration:
+        DeploymentReadyOption:
+          ActionOnTimeout: CONTINUE_DEPLOYMENT
+        TerminateBlueInstancesOnDeploymentSuccess:
+          Action: TERMINATE
+          TerminationWaitTimeInMinutes: 30
+      DeploymentGroupName: !Ref CodeDeployDeploymentGroupName
+      ServiceRoleArn: !GetAtt CodeDeployServiceRole.Arn
+      ECSServices:
+        - ClusterName: !Ref ECSClusterName
+          ServiceName: !Ref ECSServiceName
+      LoadBalancerInfo:
+        TargetGroupPairInfoList:
+          - ProdTrafficRoute:
+              ListenerArns:
+                - !Ref ALBProductionListenerArn
+            TargetGroups:
+              - Name: !Ref ALBTargetGroupBlueName
+              - Name: !Ref ALBTargetGroupGreenName
+            TestTrafficRoute:
+              ListenerArns:
+                - !Ref ALBTestListenerArn
+      DeploymentStyle:
+        DeploymentOption: WITH_TRAFFIC_CONTROL
+        DeploymentType: BLUE_GREEN
+      DeploymentConfigName: !Ref CodeDeployDeploymentConfigName
+      Tags:
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # -------------------------------------
+  # CodePipeline
+  # -------------------------------------
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      Name: !Sub ${ProjectName}-${Environment}-back-pipeline
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: 1
+              Configuration:
+                FullRepositoryId: !Ref BackEndRepositoryName
+                ConnectionArn: !Ref CodeStarConnectionArn
+                BranchName: !Ref SourceBranchName
+                DetectChanges: !If
+                  - IsEnvPrd
+                  - false
+                  - true
+              OutputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: BuildAction
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+                PrimarySource: SourceArtifact
+                BatchEnabled: true
+              RunOrder: 1
+              InputArtifacts:
+                - Name: SourceArtifact
+              OutputArtifacts:
+                - Name: BuildBackEndDjangoArtifact
+                - Name: BuildBackEndNginxArtifact
+        - Name: Deploy
+          Actions:
+            - Name: DeployAction
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: CodeDeployToECS
+              Configuration:
+                AppSpecTemplateArtifact: SourceArtifact
+                AppSpecTemplatePath: !Ref AppSpecTemplatePath
+                TaskDefinitionTemplateArtifact: SourceArtifact
+                TaskDefinitionTemplatePath: !Ref TaskDefinitionTemplatePath
+                ApplicationName: !Ref CodeDeployApplicationName
+                DeploymentGroupName: !Ref CodeDeployDeploymentGroupName
+                Image1ArtifactName: BuildBackEndDjangoArtifact
+                Image1ContainerName: DJANGO_IMAGE_NAME
+                Image2ArtifactName: BuildBackEndNginxArtifact
+                Image2ContainerName: NGINX_IMAGE_NAME
+              RunOrder: 1
+              InputArtifacts:
+                - Name: SourceArtifact
+                - Name: BuildBackEndDjangoArtifact
+                - Name: BuildBackEndNginxArtifact
+              Region: !Ref AWS::Region
+
+# -------------------------------------
+# Output parameters
+# -------------------------------------
+Outputs:
+  CodePipelineLogicalID:
+    Value: !Ref CodePipeline
+  CodeBuildServiceRoleArn:
+    Value: !GetAtt CodeBuildServiceRole.Arn
+  CodeBuildProjectArn:
+    Value: !GetAtt CodeBuildProject.Arn
+  CodeBuildProjectName:
+    Value: !Ref CodeBuildProject
+  CodeDeployDeploymentGroupArn:
+    Value: !Ref CodeDeployDeploymentGroup
+  ArtifactBucketArn:
+    Value: !GetAtt ArtifactBucket.Arn
+  ArtifactBucketName:
+    Value: !Ref ArtifactBucket

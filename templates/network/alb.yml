@@ -79,7 +79,7 @@ Parameters:
   DeletionProtectionEnabled:
     Description: "Select whether to enable deletion protection."
     Type: String
-    Default: false
+    Default: true
     AllowedValues:
       - false
       - true

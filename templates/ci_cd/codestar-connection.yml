@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'CodeStar Connection Stack'
+
+# -------------------------------------
+# Input parameters
+# -------------------------------------
+Parameters:
+  GitHubOrgName:
+    Description: "GitHub organization's name will be set as the prefix of the environment variable name. (default: organization)"
+    Type: String
+    Default: organization
+  ProviderType:
+    Type: String
+    Default: GitHub
+    AllowedValues:
+      - GitHub
+      - GitHubEnterpriseServer
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  SourceConnection:
+    Type: AWS::CodeStarConnections::Connection
+    Properties:
+      ConnectionName: !Sub ${GitHubOrgName}-connection
+      ProviderType: !Ref ProviderType
+
+# -------------------------------------
+# Output parameters
+# -------------------------------------
+Outputs:
+  SourceConnectionArn:
+    Value: !Ref SourceConnection
