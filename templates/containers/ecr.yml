@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'ECR Stack'
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: 'Project Configuration'
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: 'ECR Configuration'
+        Parameters:
+          - BackEndAppRepositorySuffix
+          - BackEndWebRepositorySuffix
+
+# -------------------------------------
+# Input parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: 'Enter the project name. (ex: my-project)'
+    Type: String
+    Default: my-project
+    ConstraintDescription: 'ProjectName must be enter.'
+    MinLength: 1
+  Environment:
+    Description: 'Select the environment.'
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: 'Environment must be select.'
+  BackEndAppRepositorySuffix:
+    Description: 'Repository name suffix of the application container image. (ex: django)'
+    Type: String
+    Default: django
+  BackEndWebRepositorySuffix:
+    Description: 'Repository name suffix of the webserver container image. (ex: nginx)'
+    Type: String
+    Default: nginx
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  BackEndAppRepository:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub ${ProjectName}/${Environment}/back/${BackEndAppRepositorySuffix}
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: IMMUTABLE
+      Tags:
+        - Key: ProjectName
+          Value: !Sub ${ProjectName}
+        - Key: Environment
+          Value: !Sub ${Environment}
+  BackEndWebRepository:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub ${ProjectName}/${Environment}/back/${BackEndWebRepositorySuffix}
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: IMMUTABLE
+      Tags:
+        - Key: ProjectName
+          Value: !Sub ${ProjectName}
+        - Key: Environment
+          Value: !Sub ${Environment}
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  BackEndAppRepository:
+    Value: !Ref BackEndAppRepository
+  BackEndWebRepository:
+    Value: !Ref BackEndWebRepository

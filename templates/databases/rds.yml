@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: "RDS Stack"
+Description: "RDS (PostgreSQL) Stack"
 
 # -------------------------------------
 # Metadata
@@ -40,9 +40,9 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name. (ex: cloud-formation-playground)"
+    Description: "Enter the project name. (ex: my-project)"
     Type: String
-    Default: cloud-formation-playground
+    Default: my-project
     ConstraintDescription: "ProjectName is required."
     MinLength: 1
   Environment:
@@ -83,24 +83,17 @@ Parameters:
     Default: gp3
     AllowedValues: [gp3, io1]
   RDSDBName:
-    Description: "Enter the database name. (default: django-db)"
+    Description: "Enter the database name. (default: postgres)"
     Type: String
-    Default: django-db
+    Default: postgres
   RDSDBMasterUserName:
     Description: "Enter the master username."
     Type: String
-    MinLength: 1
-    MaxLength: 16
-    AllowedPattern: "^[a-zA-Z][a-zA-Z_0-9]*"
-    ConstraintDescription: "Must begin with a letter and contain only alphanumeric characters."
-    NoEcho: true
+    Default: postgres
   RDSDBMasterUserPassword:
     Description: "Enter the master password."
     Type: String
-    MinLength: 10
-    MaxLength: 41
-    AllowedPattern: "^[a-zA-Z0-9]*"
-    ConstraintDescription: "Must contain only alphanumeric characters."
+    Default: postgres
     NoEcho: true
   MultiAZEnabled:
     Description: "Select whether you want to enable Multi-AZ or not. (default: false)"
@@ -149,6 +142,26 @@ Parameters:
 # Resources
 # -------------------------------------
 Resources:
+  # -------------------------------------
+  # IAM Role
+  # -------------------------------------
+  RDSMonitoringRole:
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub RDSMonitoringRole-${ProjectName}-${Environment}
+      Path: /service-role/
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: monitoring.rds.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole
+
   # -------------------------------------
   # DB SubnetGroup
   # -------------------------------------
@@ -230,6 +243,7 @@ Resources:
       StorageEncrypted: true
       EnablePerformanceInsights: !Ref EnablePerformanceInsights
       MonitoringInterval: 60
+      MonitoringRoleArn: !GetAtt RDSMonitoringRole.Arn
       EnableCloudwatchLogsExports: [postgresql]
       AutoMinorVersionUpgrade: !Ref AutoMinorVersionUpgradeEnabled
       PreferredMaintenanceWindow: !Ref PreferredMaintenanceWindow
