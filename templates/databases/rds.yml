@@ -136,6 +136,7 @@ Parameters:
   DeletionProtectionEnabled:
     Description: "Select whether to enable deletion protection."
     Type: String
+    # 今回は検証用でfalseにします
     Default: false
     AllowedValues: [true, false]
 
@@ -199,20 +200,20 @@ Resources:
   # -------------------------------------
   # DB OptionGroup
   # -------------------------------------
-  RDSDBOptionGroup:
-    Type: AWS::RDS::OptionGroup
-    Properties:
-      EngineName: postgres
-      MajorEngineVersion: !Ref PostgreSQLMajorVersion
-      OptionGroupDescription: !Sub ${ProjectName}-${Environment}-rds-og
-      OptionGroupName: !Sub ${ProjectName}-${Environment}-rds-og
-      Tags:
-        - Key: Name
-          Value: !Sub ${ProjectName}-${Environment}-rds-og
-        - Key: ProjectName
-          Value: !Sub ${ProjectName}
-        - Key: Environment
-          Value: !Sub ${Environment}
+  # RDSDBOptionGroup:
+  #   Type: AWS::RDS::OptionGroup
+  #   Properties:
+  #     EngineName: postgres
+  #     MajorEngineVersion: !Ref PostgreSQLMajorVersion
+  #     OptionGroupDescription: !Sub ${ProjectName}-${Environment}-rds-og
+  #     OptionGroupName: !Sub ${ProjectName}-${Environment}-rds-og
+  #     Tags:
+  #       - Key: Name
+  #         Value: !Sub ${ProjectName}-${Environment}-rds-og
+  #       - Key: ProjectName
+  #         Value: !Sub ${ProjectName}
+  #       - Key: Environment
+  #         Value: !Sub ${Environment}
 
   # -------------------------------------
   # DB Instance
@@ -237,7 +238,7 @@ Resources:
         - !Ref RDSDBSecurityGroupID
       DBName: !Ref RDSDBName
       DBParameterGroupName: !Ref RDSDBParameterGroup
-      OptionGroupName: !Ref RDSDBOptionGroup
+      # OptionGroupName: !Ref RDSDBOptionGroup
       BackupRetentionPeriod: !Ref BackupRetentionPeriod
       PreferredBackupWindow: !Ref PreferredBackupWindow
       CopyTagsToSnapshot: true
