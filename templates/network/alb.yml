@@ -75,11 +75,11 @@ Parameters:
     Description: "Enter the path respond to health checks from ALB."
     Type: String
     Default: /api/health
-  # 削除保護
+  # 今回は検証用のためfalse
   DeletionProtectionEnabled:
     Description: "Select whether to enable deletion protection."
     Type: String
-    Default: true
+    Default: false
     AllowedValues:
       - false
       - true

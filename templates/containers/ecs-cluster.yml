@@ -152,12 +152,12 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              # EC2 参照
-              - ec2:Describe*
-              # ELB 参照
-              - elasticloadbalancing:Describe*
-              # AutoScaling 参照
-              - autoscaling:Describe*
+              # # EC2 参照
+              # - ec2:Describe*
+              # # ELB 参照
+              # - elasticloadbalancing:Describe*
+              # # AutoScaling 参照
+              # - autoscaling:Describe*
               # CloudWatch 参照
               - cloudwatch:ListMetrics
               - cloudwatch:GetMetricStatistics
@@ -170,10 +170,6 @@ Resources:
               - logs:CreateLogStream
               - logs:PutLogEvents
               - logs:DescribeLogStreams
-              # SES 経由のメール送信
-              - ses:SendRawEmail
-              # SNS 経由のメッセージ配信
-              - sns:Publish
             Resource: '*'
       Roles:
         - Ref: ECSTaskRole
