@@ -49,10 +49,10 @@ Parameters:
       - prd
     ConstraintDescription: "Environment must be select."
   AppLogGroupName:
-    Description: "CloudWatch Logs log-group name for application. (ex: /ecs/my-project/<environment>/back/django)"
+    Description: "CloudWatch Logs log-group name for application. (ex: /ecs/my-project/dev/back/django)"
     Type: String
   WebLogGroupName:
-    Description: "CloudWatch Logs log-group name for webserver. (ex: /ecs/my-project/<environment>/back/nginx)"
+    Description: "CloudWatch Logs log-group name for webserver. (ex: /ecs/my-project/dev/back/nginx)"
     Type: String
 
 # -------------------------------------

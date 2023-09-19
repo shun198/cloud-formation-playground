@@ -59,6 +59,7 @@ Parameters:
   ECSClusterName:
     Description: "Enter the ECS cluster name. (ex: my-project-dev-cluster)"
     Type: String
+    Default: my-project-dev-cluster
   ECSPublicSubnet1:
     Description: "Enter the Subnet ID for ECS in the selected VPC."
     Type: AWS::EC2::Subnet::Id
@@ -103,10 +104,10 @@ Parameters:
     Description: "Enter the path of the entrypoint to be executed at ECS task startup. (default: /usr/local/bin/entrypoint.sh)"
     Type: String
     Default: /usr/local/bin/entrypoint.sh
-  # アプリケーション用の Dockerfile で設定しているワーキングディレクトリと揃える
   ApplicationRootPath:
-    Description: "Enter the application root path as defined in the Dockerfile. (ex: /my_project_back)"
+    Description: "Enter the application root path as defined in the Dockerfile. (ex: /code)"
     Type: String
+    Default: /code
   # ALBTargetGroupArn:
   #   Description: "Enter the ALB Target Group ARN."
   #   Type: String
@@ -121,9 +122,11 @@ Parameters:
   AppLogGroupName:
     Description: "Enter the CloudWatch Logs log-group name for application. (ex: /ecs/project/dev/back/django)"
     Type: String
+    Default: /ecs/my-project/dev/back/django
   WebLogGroupName:
     Description: "Enter the CloudWatch Logs log-group name for webserver. (ex: /ecs/project/dev/back/nginx)"
     Type: String
+    Default: /ecs/my-project/dev/back/nginx
 
 # -------------------------------------
 # Resources
@@ -166,27 +169,27 @@ Resources:
             # Specific Environment
             # -------------------------------------
             - Name: POSTGRES_NAME
-              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/back/POSTGRES_NAME
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/POSTGRES_NAME
             - Name: POSTGRES_USER
-              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/back/POSTGRES_USER
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/POSTGRES_USER
             # - Name: POSTGRES_ROOT_PASSWORD
             #   ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/back/POSTGRES_ROOT_PASSWORD
             - Name: POSTGRES_PASSWORD
-              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/back/POSTGRES_PASSWORD
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/POSTGRES_PASSWORD
             - Name: POSTGRES_PORT
-              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/back/POSTGRES_PORT
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/POSTGRES_PORT
             - Name: POSTGRES_HOST
-              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/back/POSTGRES_HOST
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/POSTGRES_HOST
             - Name: SECRET_KEY
-              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/back/SECRET_KEY
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/SECRET_KEY
             - Name: ALLOWED_HOSTS
-              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/back/ALLOWED_HOSTS
-            - Name: REGION_NAME
-              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/back/REGION_NAME
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/ALLOWED_HOSTS
+            - Name: AWS_DEFAULT_REGION_NAME
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/AWS_DEFAULT_REGION_NAME
             - Name: TRUSTED_ORIGINS
-              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/back/TRUSTED_ORIGINS
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/TRUSTED_ORIGINS
             - Name: DJANGO_SETTINGS_MODULE
-              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/back/DJANGO_SETTINGS_MODULE
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/DJANGO_SETTINGS_MODULE
             # - Name: CSRF_COOKIE_DOMAIN
             #   ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/back/CSRF_COOKIE_DOMAIN
           MountPoints:

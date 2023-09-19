@@ -93,24 +93,24 @@ Resources:
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
-  # FargateSGIngressHTTP:
-  #   Type: AWS::EC2::SecurityGroupIngress
-  #   Properties:
-  #     GroupId: !Ref FargateSG
-  #     IpProtocol: tcp
-  #     FromPort: 80
-  #     ToPort: 80
-  #     # SourceSecurityGroupId: !Ref ALBSG
-  #     Description: "from alb health check"
-  # FargateSGIngressHTTPS:
-  #   Type: AWS::EC2::SecurityGroupIngress
-  #   Properties:
-  #     GroupId: !Ref FargateSG
-  #     IpProtocol: tcp
-  #     FromPort: 443
-  #     ToPort: 443
-  #     # SourceSecurityGroupId: !Ref ALBSG
-  #     Description: "from alb"
+  FargateSGIngressHTTP:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FargateSG
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      # SourceSecurityGroupId: !Ref ALBSG
+      Description: "from alb health check"
+  FargateSGIngressHTTPS:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FargateSG
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      # SourceSecurityGroupId: !Ref ALBSG
+      Description: "from alb"
   # Use only when Blue/Green Deployment
   # FargateSGIngressHTTPTest:
   #   Type: AWS::EC2::SecurityGroupIngress

@@ -1,0 +1,21 @@
+FROM --platform=linux/x86_64 python:3.11
+
+# 公開するポートを明示的に定義
+EXPOSE 8000
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /code
+COPY application/ /code
+RUN pip install --upgrade pip && pip install poetry
+RUN poetry install --without dev
+
+# コンテナ起動時に必ず実行したいコマンドを定義した entrypoint.sh をコピー
+COPY ./containers/django/entrypoint.sh /usr/local/bin/entrypoint.sh
+# 実行権限を付与
+RUN chmod +x /usr/local/bin/entrypoint.sh
+ENTRYPOINT ["entrypoint.sh"]
+
+VOLUME ["/code/tmp"]
+

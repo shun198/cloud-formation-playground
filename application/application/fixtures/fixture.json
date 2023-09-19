@@ -1,0 +1,124 @@
+[
+    {
+        "model": "application.User",
+        "pk": 1,
+        "fields": {
+            "employee_number": "00000001",
+            "username": "test01",
+            "password": "pbkdf2_sha256$390000$KF4YHJxvWjSODaXdxLBg6S$U5XDh8mR77kMMUtlRcBZS/bkaxdpjNR/P4zyy25g3/I=",
+            "email": "test01@example.com",
+            "role": 0,
+            "is_superuser": 0,
+            "created_at": "2022-07-28T00:31:09.732Z",
+            "updated_at": "2022-07-28T00:31:09.732Z"
+        }
+    },
+    {
+        "model": "application.User",
+        "pk": 2,
+        "fields": {
+            "employee_number": "00000002",
+            "username": "test02",
+            "password": "pbkdf2_sha256$390000$KF4YHJxvWjSODaXdxLBg6S$U5XDh8mR77kMMUtlRcBZS/bkaxdpjNR/P4zyy25g3/I=",
+            "email": "test02@example.com",
+            "role": 1,
+            "is_superuser": 0,
+            "created_at": "2022-07-28T00:31:09.732Z",
+            "updated_at": "2022-07-28T00:31:09.732Z"
+        }
+    },
+    {
+        "model": "application.User",
+        "pk": 3,
+        "fields": {
+            "employee_number": "00000003",
+            "username": "test03",
+            "password": "pbkdf2_sha256$390000$KF4YHJxvWjSODaXdxLBg6S$U5XDh8mR77kMMUtlRcBZS/bkaxdpjNR/P4zyy25g3/I=",
+            "email": "test03@example.com",
+            "role": 2,
+            "is_superuser": 0,
+            "created_at": "2022-07-28T00:31:09.732Z",
+            "updated_at": "2022-07-28T00:31:09.732Z"
+        }
+    },
+    {
+        "model": "application.User",
+        "pk": 4,
+        "fields": {
+            "employee_number": "00000004",
+            "username": "test04",
+            "password": "pbkdf2_sha256$390000$KF4YHJxvWjSODaXdxLBg6S$U5XDh8mR77kMMUtlRcBZS/bkaxdpjNR/P4zyy25g3/I=",
+            "email": "test04@example.com",
+            "role": 0,
+            "is_superuser": 1,
+            "created_at": "2022-07-28T00:31:09.732Z",
+            "updated_at": "2022-07-28T00:31:09.732Z"
+        }
+    },
+    {
+        "model": "application.Customer",
+        "pk": 1,
+        "fields": {
+            "kana": "オオサカタロウ",
+            "name": "大阪太郎",
+            "birthday": "1992-01-06",
+            "phone_no": "08011112222",
+            "address": 1
+        }
+    },
+    {
+        "model": "application.Customer",
+        "pk": 2,
+        "fields": {
+            "kana": "キョウトジロウ",
+            "name": "京都二郎",
+            "birthday": "1994-01-06",
+            "phone_no": "08022223333",
+            "address": 2
+        }
+    },
+    {
+        "model": "application.Customer",
+        "pk": 3,
+        "fields": {
+            "kana": "ヒョウゴサブロウ",
+            "name": "兵庫三郎",
+            "birthday": "1995-03-06",
+            "phone_no": "08033334444",
+            "address": 3
+        }
+    },
+    {
+        "model": "application.Address",
+        "pk": 1,
+        "fields": {
+            "prefecture": "京都府",
+            "municipalities": "京都市東山区",
+            "house_no": "清水",
+            "other": "1-294",
+            "post_no": "6050862"
+        }
+    },
+    {
+        "model": "application.Address",
+        "pk": 2,
+        "fields": {
+            "prefecture": "京都府",
+            "municipalities": "京都市東山区",
+            "house_no": "北区金閣寺町1",
+            "other": "",
+            "post_no": "6038361"
+        }
+    },
+    {
+        "model": "application.Address",
+        "pk": 3,
+        "fields": {
+            "prefecture": "京都府",
+            "municipalities": "京都市東山区",
+            "house_no": "左京区銀閣寺町2",
+            "other": "",
+            "post_no": "6068402"
+        }
+    }
+]
