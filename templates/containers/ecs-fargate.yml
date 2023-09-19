@@ -162,7 +162,7 @@ Resources:
               Protocol: tcp
           EntryPoint:
             - !Ref EntrypointPath
-          WorkingDirectory: !Ref ApplicationRootPath
+          # WorkingDirectory: !Ref ApplicationRootPath
           # 環境変数
           Secrets:
             # -------------------------------------
@@ -214,6 +214,7 @@ Resources:
               Condition: START
           MountPoints:
             - SourceVolume: tmp-data
+              # ContainerPath: !Sub ${ApplicationRootPath}/tmp
               ContainerPath: !Sub ${ApplicationRootPath}/tmp
           LogConfiguration:
             LogDriver: awslogs
