@@ -46,28 +46,46 @@ Parameters:
 Resources:
   
   # For ALB
-  # ALBSG:
-  #   Type: AWS::EC2::SecurityGroup
-  #   Properties:
-  #     GroupName: !Sub ${ProjectName}-${Environment}-alb-for-fargate-sg
-  #     GroupDescription: "Security Group For ALB"
-  #     VpcId: !Ref VPCID
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Sub ${ProjectName}-${Environment}-alb-for-fargate-sg
-  #       - Key: ProjectName
-  #         Value: !Ref ProjectName
-  #       - Key: Environment
-  #         Value: !Ref Environment
-  # ALBSGIngressHTTPS1:
-  #   Type: AWS::EC2::SecurityGroupIngress
-  #   Properties:
-  #     GroupId: !Ref ALBSG
-  #     IpProtocol: tcp
-  #     FromPort: 443
-  #     ToPort: 443
-  #     CidrIp: !Ref ManagementIPAddress
-  #     Description: "from my alb sg"
+  ALBSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${ProjectName}-${Environment}-alb-for-fargate-sg
+      GroupDescription: "Security Group For ALB"
+      VpcId: !Ref VPCID
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${Environment}-alb-for-fargate-sg
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  ALBSGIngressHTTP:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref ALBSG
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: 0.0.0.0/0
+      Description: "from my alb sg"
+  ALBSGEgressHTTP:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref ALBSG
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: 0.0.0.0/0
+      Description: "from my alb sg"
+  ALBSGIngressHTTPS1:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref ALBSG
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: 0.0.0.0/0
+      Description: "from my alb sg"
   # # Use only when Blue/Green Deployment
   # ALBSGIngressHTTPTest:
   #   Type: AWS::EC2::SecurityGroupIngress
@@ -76,7 +94,7 @@ Resources:
   #     IpProtocol: tcp
   #     FromPort: 8080
   #     ToPort: 8080
-  #     CidrIp: !Ref ManagementIPAddress
+  #     CidrIp: 0.0.0.0/0
   #     Description: "for blue/green deployment"
   
   # For ECS Fargate
@@ -100,8 +118,8 @@ Resources:
       IpProtocol: tcp
       FromPort: 80
       ToPort: 80
-      CidrIp: 0.0.0.0/0
-      # SourceSecurityGroupId: !Ref ALBSG
+      # CidrIp: 0.0.0.0/0
+      SourceSecurityGroupId: !Ref ALBSG
       Description: "from alb health check"
   FargateSGIngressHTTPS:
     Type: AWS::EC2::SecurityGroupIngress
@@ -110,8 +128,8 @@ Resources:
       IpProtocol: tcp
       FromPort: 443
       ToPort: 443
-      CidrIp: 0.0.0.0/0
-      # SourceSecurityGroupId: !Ref ALBSG
+      # CidrIp: 0.0.0.0/0
+      SourceSecurityGroupId: !Ref ALBSG
       Description: "from alb"
   # Use only when Blue/Green Deployment
   # FargateSGIngressHTTPTest:
@@ -147,9 +165,9 @@ Resources:
 # Output parameters
 # -------------------------------------
 Outputs:
-  # ALBSG:
-  #   Description: "Security Group For ALB"
-  #   Value: !Ref ALBSG
+  ALBSG:
+    Description: "Security Group For ALB"
+    Value: !Ref ALBSG
   FargateSG:
     Description: "Security Group For ECS Fargate with ALB"
     Value: !Ref FargateSG

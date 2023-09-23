@@ -70,9 +70,9 @@ Parameters:
       - prd
     ConstraintDescription: "Environment must be select."
   BackEndRepositoryName:
-    Description: "Enter the target GitHub backend full repository name. (ex: organization/my-project)"
+    Description: "Enter the target GitHub backend full repository name. (ex: shun198/cloud-formation-playground)"
     Type: String
-    Default: organization/my-project
+    Default: shun198/cloud-formation-playground
   SourceBranchName:
     Description: "Enter the source branch name in GitHub backend repository. (ex: develop or main)"
     Type: String

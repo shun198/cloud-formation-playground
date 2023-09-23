@@ -225,15 +225,15 @@ Resources:
   #     LoadBalancerArn: !Ref InternetALB
   #     Port: 8080
   #     Protocol: HTTP
-  ALBListenerHTTP:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref ALBTargetGroup
-      LoadBalancerArn: !Ref InternetALB
-      Port: 8080
-      Protocol: HTTP
+  # ALBListenerHTTPTest:
+  #   Type: AWS::ElasticLoadBalancingV2::Listener
+  #   Properties:
+  #     DefaultActions:
+  #       - Type: forward
+  #         TargetGroupArn: !Ref ALBTargetGroupBlue
+  #     LoadBalancerArn: !Ref InternetALB
+  #     Port: 8080
+  #     Protocol: HTTP
 
   # -------------------------------------
   # S3 Bucket For ALB Access Logs (Use only staging and production)
