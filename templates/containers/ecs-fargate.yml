@@ -101,9 +101,9 @@ Parameters:
     Description: "Specify the IAM Role ARN required to execute the task. (ex: arn:aws:iam::XXXXXXXXXXXX:role/ECSTaskExecutionRole)"
     Type: String
   EntrypointPath:
-    Description: "Enter the path of the entrypoint to be executed at ECS task startup. (default: /usr/local/bin/entrypoint.sh)"
+    Description: "Enter the path of the entrypoint to be executed at ECS task startup. (default: /usr/local/bin/entrypoint.prd.sh)"
     Type: String
-    Default: /usr/local/bin/entrypoint.sh
+    Default: /usr/local/bin/entrypoint.prd.sh
   ApplicationRootPath:
     Description: "Enter the application root path as defined in the Dockerfile. (ex: /code)"
     Type: String
@@ -214,7 +214,6 @@ Resources:
               Condition: START
           MountPoints:
             - SourceVolume: tmp-data
-              # ContainerPath: !Sub ${ApplicationRootPath}/tmp
               ContainerPath: !Sub ${ApplicationRootPath}/tmp
           LogConfiguration:
             LogDriver: awslogs
