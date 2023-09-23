@@ -84,7 +84,7 @@ Resources:
         # カスタムメトリクス出力用
         - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
         # ECSTaskExecutionRole が使用できるデフォルト権限
-        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+        # - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
       RoleName: !Sub ECSTaskExecutionRole-${ProjectName}-${Environment}
       Path: /service-role/
 
@@ -108,7 +108,7 @@ Resources:
               - ecr:GetRepositoryPolicy
               - ecr:ListTagsForResource
             Resource:
-              - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/*
+              - *
           - Effect: Allow
             Action:
               # 環境変数の取得用
@@ -134,45 +134,45 @@ Resources:
                 - events.amazonaws.com
             Action:
               - sts:AssumeRole
-      ManagedPolicyArns:
+      # ManagedPolicyArns:
         # カスタムメトリクス出力用
-        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
-        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        # - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+        # - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
         # CloudWatchEvents との連携用
-        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceEventsRole
+        # - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceEventsRole
       RoleName: !Sub ECSTaskRole-${ProjectName}-${Environment}
       Path: /service-role/
 
-  ECSTaskRolePolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub ECSTaskRolePolicy-${ProjectName}-${Environment}
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action:
-              # # EC2 参照
-              # - ec2:Describe*
-              # # ELB 参照
-              # - elasticloadbalancing:Describe*
-              # # AutoScaling 参照
-              # - autoscaling:Describe*
-              # CloudWatch 参照
-              - cloudwatch:ListMetrics
-              - cloudwatch:GetMetricStatistics
-              - cloudwatch:Describe*
-              # CloudWatch アラーム静観処理
-              - cloudwatch:DisableAlarmActions
-              - cloudwatch:EnableAlarmActions
-              # CloudWatch Logs ログ出力
-              - logs:CreateLogGroup
-              - logs:CreateLogStream
-              - logs:PutLogEvents
-              - logs:DescribeLogStreams
-            Resource: '*'
-      Roles:
-        - Ref: ECSTaskRole
+  # ECSTaskRolePolicy:
+  #   Type: AWS::IAM::Policy
+  #   Properties:
+  #     PolicyName: !Sub ECSTaskRolePolicy-${ProjectName}-${Environment}
+  #     PolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Action:
+  #             # # EC2 参照
+  #             # - ec2:Describe*
+  #             # # ELB 参照
+  #             # - elasticloadbalancing:Describe*
+  #             # # AutoScaling 参照
+  #             # - autoscaling:Describe*
+  #             # CloudWatch 参照
+  #             - cloudwatch:ListMetrics
+  #             - cloudwatch:GetMetricStatistics
+  #             - cloudwatch:Describe*
+  #             # CloudWatch アラーム静観処理
+  #             - cloudwatch:DisableAlarmActions
+  #             - cloudwatch:EnableAlarmActions
+  #             # CloudWatch Logs ログ出力
+  #             - logs:CreateLogGroup
+  #             - logs:CreateLogStream
+  #             - logs:PutLogEvents
+  #             - logs:DescribeLogStreams
+  #           Resource: '*'
+  #     Roles:
+  #       - Ref: ECSTaskRole
 
 # -------------------------------------
 # Output parameters

@@ -100,6 +100,7 @@ Resources:
       IpProtocol: tcp
       FromPort: 80
       ToPort: 80
+      CidrIp: 0.0.0.0/0
       # SourceSecurityGroupId: !Ref ALBSG
       Description: "from alb health check"
   FargateSGIngressHTTPS:
@@ -109,6 +110,7 @@ Resources:
       IpProtocol: tcp
       FromPort: 443
       ToPort: 443
+      CidrIp: 0.0.0.0/0
       # SourceSecurityGroupId: !Ref ALBSG
       Description: "from alb"
   # Use only when Blue/Green Deployment

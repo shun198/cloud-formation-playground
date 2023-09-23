@@ -4,12 +4,12 @@ Description: "ALB Stack"
 # -------------------------------------
 # Mappings
 # -------------------------------------
-Mappings:
-  RegionMap:
-    ap-northeast-1:
-      ELBAccountID: XXXXXXXXXXXX
-    ap-northeast-3:
-      ELBAccountID: XXXXXXXXXXXX
+# Mappings:
+#   RegionMap:
+#     ap-northeast-1:
+#       ELBAccountID: XXXXXXXXXXXX
+#     ap-northeast-3:
+#       ELBAccountID: XXXXXXXXXXXX
 
 # -------------------------------------
 # Metadata
@@ -30,12 +30,12 @@ Metadata:
           - ALBPublicSubnet1
           - ALBPublicSubnet2
           - ALBSecurityGroupID
-          - ACMCertificateArn
+          # - ACMCertificateArn
           - HealthCheckPath
           - DeletionProtectionEnabled
           - IdleTimeoutSeconds
-          - ELBSecurityPolicy
-          - AccessLogsEnabled
+          # - ELBSecurityPolicy
+          # - AccessLogsEnabled
 
 # -------------------------------------
 # Input parameters
@@ -67,9 +67,9 @@ Parameters:
   ALBSecurityGroupID:
     Description: "Select the Security Group ID for ALB."
     Type: AWS::EC2::SecurityGroup::Id
-  ACMCertificateArn:
-    Description: "Enter the Certificate ARN. (ex: arn:aws:acm:<AWS_REGION>:<AWS_ACCOUNT_ID>:certificate/<ACMCertificateID>)"
-    Type: String
+  # ACMCertificateArn:
+  #   Description: "Enter the Certificate ARN. (ex: arn:aws:acm:<AWS_REGION>:<AWS_ACCOUNT_ID>:certificate/<ACMCertificateID>)"
+  #   Type: String
   # ALB からのヘルスチェックに応答するパス
   HealthCheckPath:
     Description: "Enter the path respond to health checks from ALB."
@@ -88,29 +88,29 @@ Parameters:
     Description: "Enter the ALB idle timeout seconds. (default: 60)"
     Type: String
     Default: 60
-  ELBSecurityPolicy:
-    Description: "Select the ELB security policies."
-    Type: String
-    AllowedValues:
-      - ELBSecurityPolicy-TLS-1-2-Ext-2018-06
-      - ELBSecurityPolicy-TLS13-1-2-2021-06
+  # ELBSecurityPolicy:
+  #   Description: "Select the ELB security policies."
+  #   Type: String
+  #   AllowedValues:
+  #     - ELBSecurityPolicy-TLS-1-2-Ext-2018-06
+  #     - ELBSecurityPolicy-TLS13-1-2-2021-06
   # アクセスログ
-  AccessLogsEnabled:
-    Description: "Select whether to enable access logs."
-    Type: String
-    Default: false
-    AllowedValues:
-      - false
-      - true
+  # AccessLogsEnabled:
+  #   Description: "Select whether to enable access logs."
+  #   Type: String
+  #   Default: false
+  #   AllowedValues:
+  #     - false
+  #     - true
 
 # -------------------------------------
 # Conditions
 # -------------------------------------
-Conditions:
-  # ALB アクセスログ, アクセスログ用 S3 バケット, S3 バケットポリシー用
-  IsEnabledAccessLogs: !Equals
-    - !Ref AccessLogsEnabled
-    - true
+# Conditions:
+#   # ALB アクセスログ, アクセスログ用 S3 バケット, S3 バケットポリシー用
+#   IsEnabledAccessLogs: !Equals
+#     - !Ref AccessLogsEnabled
+#     - true
 
 # -------------------------------------
 # Resources
@@ -119,6 +119,21 @@ Resources:
   # -------------------------------------
   # Target Groups
   # -------------------------------------
+  ALBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: InternetALB
+    Properties:
+      Name: !Sub ${ProjectName}-${Environment}-tg
+      TargetType: ip
+      Protocol: HTTP
+      Port: 80
+      VpcId: !Ref VPCID
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: !Ref HealthCheckPath
+      HealthyThresholdCount: 5
+      UnhealthyThresholdCount: 2
+      HealthCheckTimeoutSeconds: 5
+      HealthCheckIntervalSeconds: 30
   ALBTargetGroupBlue:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     DependsOn: InternetALB
@@ -165,16 +180,16 @@ Resources:
         - Key: "idle_timeout.timeout_seconds"
           Value: !Ref IdleTimeoutSeconds
         # ALB アクセスログを有効化する場合のみ
-        - Key: "access_logs.s3.enabled"
-          Value: !Ref AccessLogsEnabled
-        - !If
-          - IsEnabledAccessLogs
-          - Key: "access_logs.s3.bucket"
-            Value: !Join
-              - "-"
-              - - !Sub "${ProjectName}-${Environment}-alb-access-logs"
-                - !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId]]]]
-          - !Ref AWS::NoValue
+        # - Key: "access_logs.s3.enabled"
+        #   Value: !Ref AccessLogsEnabled
+        # - !If
+        #   - IsEnabledAccessLogs
+        #   - Key: "access_logs.s3.bucket"
+        #     Value: !Join
+        #       - "-"
+        #       - - !Sub "${ProjectName}-${Environment}-alb-access-logs"
+        #         - !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId]]]]
+        #   - !Ref AWS::NoValue
       Subnets:
         - !Ref ALBPublicSubnet1
         - !Ref ALBPublicSubnet2
@@ -189,24 +204,33 @@ Resources:
   # -------------------------------------
   # Listener
   # -------------------------------------
-  ALBListenerHTTPS:
+  # ALBListenerHTTPS:
+  #   Type: AWS::ElasticLoadBalancingV2::Listener
+  #   Properties:
+  #     DefaultActions:
+  #       - Type: forward
+  #         TargetGroupArn: !Ref ALBTargetGroupBlue
+  #     LoadBalancerArn: !Ref InternetALB
+  #     Port: 443
+  #     Protocol: HTTPS
+  #     Certificates:
+  #       - CertificateArn: !Ref ACMCertificateArn
+  #     SslPolicy: !Ref ELBSecurityPolicy
+  # ALBListenerHTTPTest:
+  #   Type: AWS::ElasticLoadBalancingV2::Listener
+  #   Properties:
+  #     DefaultActions:
+  #       - Type: forward
+  #         TargetGroupArn: !Ref ALBTargetGroupBlue
+  #     LoadBalancerArn: !Ref InternetALB
+  #     Port: 8080
+  #     Protocol: HTTP
+  ALBListenerHTTP:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref ALBTargetGroupBlue
-      LoadBalancerArn: !Ref InternetALB
-      Port: 443
-      Protocol: HTTPS
-      Certificates:
-        - CertificateArn: !Ref ACMCertificateArn
-      SslPolicy: !Ref ELBSecurityPolicy
-  ALBListenerHTTPTest:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref ALBTargetGroupBlue
+          TargetGroupArn: !Ref ALBTargetGroup
       LoadBalancerArn: !Ref InternetALB
       Port: 8080
       Protocol: HTTP
@@ -214,43 +238,43 @@ Resources:
   # -------------------------------------
   # S3 Bucket For ALB Access Logs (Use only staging and production)
   # -------------------------------------
-  LogsBucket:
-    Condition: IsEnabledAccessLogs
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Join
-        - "-"
-        - - !Sub "${ProjectName}-${Environment}-alb-access-logs"
-          - !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId]]]]
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      LifecycleConfiguration:
-        Rules:
-          - Id: DeleteAfter365days
-            Status: Enabled
-            ExpirationInDays: 365
-  LogsBucketPolicy:
-    Condition: IsEnabledAccessLogs
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref LogsBucket
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              # S3 バケットポリシーに使用する ELB Account ID
-              AWS: !FindInMap [RegionMap, !Ref AWS::Region, ELBAccountID]
-            Action:
-              - s3:PutObject
-            Resource: !Sub arn:aws:s3:::${LogsBucket}/AWSLogs/${AWS::AccountId}/*
+  # LogsBucket:
+  #   Condition: IsEnabledAccessLogs
+  #   Type: AWS::S3::Bucket
+  #   Properties:
+  #     BucketName: !Join
+  #       - "-"
+  #       - - !Sub "${ProjectName}-${Environment}-alb-access-logs"
+  #         - !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId]]]]
+  #     BucketEncryption:
+  #       ServerSideEncryptionConfiguration:
+  #         - ServerSideEncryptionByDefault:
+  #             SSEAlgorithm: AES256
+  #     PublicAccessBlockConfiguration:
+  #       BlockPublicAcls: true
+  #       BlockPublicPolicy: true
+  #       IgnorePublicAcls: true
+  #       RestrictPublicBuckets: true
+  #     LifecycleConfiguration:
+  #       Rules:
+  #         - Id: DeleteAfter365days
+  #           Status: Enabled
+  #           ExpirationInDays: 365
+  # LogsBucketPolicy:
+  #   Condition: IsEnabledAccessLogs
+  #   Type: AWS::S3::BucketPolicy
+  #   Properties:
+  #     Bucket: !Ref LogsBucket
+  #     PolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             # S3 バケットポリシーに使用する ELB Account ID
+  #             AWS: !FindInMap [RegionMap, !Ref AWS::Region, ELBAccountID]
+  #           Action:
+  #             - s3:PutObject
+  #           Resource: !Sub arn:aws:s3:::${LogsBucket}/AWSLogs/${AWS::AccountId}/*
 
 # -------------------------------------
 # Output parameters
@@ -260,6 +284,10 @@ Outputs:
     Value: !Ref InternetALB
   InternetALBName:
     Value: !GetAtt InternetALB.LoadBalancerName
+  ALBTargetGroupArn:
+    Value: !Ref ALBTargetGroup
+  ALBTargetGroupName:
+    Value: !GetAtt ALBTargetGroup.TargetGroupName
   ALBTargetGroupBlueArn:
     Value: !Ref ALBTargetGroupBlue
   ALBTargetGroupBlueName:

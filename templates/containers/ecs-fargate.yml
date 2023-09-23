@@ -26,7 +26,7 @@ Metadata:
           - ECSTaskRoleArn
           - ECSTaskExecutionRoleArn
           - ApplicationRootPath
-          # - ALBTargetGroupArn
+          - ALBTargetGroupArn
       - Label:
           default: "ECR Configuration"
         Parameters:
@@ -108,9 +108,9 @@ Parameters:
     Description: "Enter the application root path as defined in the Dockerfile. (ex: /code)"
     Type: String
     Default: /code
-  # ALBTargetGroupArn:
-  #   Description: "Enter the ALB Target Group ARN."
-  #   Type: String
+  ALBTargetGroupArn:
+    Description: "Enter the ALB Target Group ARN."
+    Type: String
   # ECR リポジトリにプッシュしているアプリケーションまたはウェブサーバのイメージタグを指定
   # CI/CD で Image URI が置き換えられている場合は Tag （コミットハッシュ） を揃えること
   ECRAppContainerImageURI:
@@ -162,7 +162,6 @@ Resources:
               Protocol: tcp
           EntryPoint:
             - !Ref EntrypointPath
-          # WorkingDirectory: !Ref ApplicationRootPath
           # 環境変数
           Secrets:
             # -------------------------------------
@@ -172,8 +171,6 @@ Resources:
               ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/POSTGRES_NAME
             - Name: POSTGRES_USER
               ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/POSTGRES_USER
-            # - Name: POSTGRES_ROOT_PASSWORD
-            #   ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/back/POSTGRES_ROOT_PASSWORD
             - Name: POSTGRES_PASSWORD
               ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/POSTGRES_PASSWORD
             - Name: POSTGRES_PORT
@@ -190,8 +187,6 @@ Resources:
               ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/TRUSTED_ORIGINS
             - Name: DJANGO_SETTINGS_MODULE
               ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/DJANGO_SETTINGS_MODULE
-            # - Name: CSRF_COOKIE_DOMAIN
-            #   ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/back/CSRF_COOKIE_DOMAIN
           MountPoints:
             - SourceVolume: tmp-data
               ContainerPath: !Sub ${ApplicationRootPath}/tmp
@@ -245,10 +240,10 @@ Resources:
       #   MaximumPercent: 200
       # DeploymentController:
       #   Type: CODE_DEPLOY
-      # LoadBalancers:
-      #   - TargetGroupArn: !Ref ALBTargetGroupArn
-      #     ContainerPort: 80
-      #     ContainerName: web
+      LoadBalancers:
+        - TargetGroupArn: !Ref ALBTargetGroupArn
+          ContainerPort: 80
+          ContainerName: web
       NetworkConfiguration:
         AwsvpcConfiguration:
           # PublicSubnet を利用する場合は ENABLED にする
