@@ -84,7 +84,7 @@ Resources:
         # カスタムメトリクス出力用
         - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
         # ECSTaskExecutionRole が使用できるデフォルト権限
-        # - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
       RoleName: !Sub ECSTaskExecutionRole-${ProjectName}-${Environment}
       Path: /service-role/
 

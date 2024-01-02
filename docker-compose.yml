@@ -6,25 +6,19 @@ services:
     build:
       context: .
       dockerfile: containers/postgres/Dockerfile
-    # M1チップでも動くように
-    platform: linux/x86_64
-    # ローカルの/data/dbをコンテナの/var/lib/postgresql/dataにマウンティング
     volumes:
       - db_data:/var/lib/postgresql/data
-    # 環境変数
-    environment:
-      - POSTGRES_NAME
-      - POSTGRES_HOST
-      - POSTGRES_USER
-      - POSTGRES_PASSWORD
-    ports:
-      - '5432:5432'
     healthcheck:
       test: pg_isready -U "${POSTGRES_USER:-postgres}" || exit 1
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
+    environment:
+      - POSTGRES_NAME
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+    ports:
+      - '5432:5432' # デバッグ用
 
   app:
     container_name: app
@@ -32,7 +26,7 @@ services:
       context: .
       dockerfile: containers/django/Dockerfile
     volumes:
-      - ./application:/code
+      - ./backend:/code
       - ./static:/static
     ports:
       - '8000:8000'
@@ -47,6 +41,13 @@ services:
       db:
         condition: service_healthy
 
+  mail:
+    container_name: mail
+    image: schickling/mailcatcher
+    ports:
+      - '1080:1080'
+      - '1025:1025'
+
   nginx:
     container_name: web
     build:
@@ -59,12 +60,21 @@ services:
     depends_on:
       - app
 
-  mail:
-    container_name: mail
-    image: schickling/mailcatcher
-    ports:
-      - '1080:1080'
-      - '1025:1025'
+  # volta検証のためコメントアウト
+  # front:
+  #   container_name: front
+  #   build:
+  #     context: .
+  #     dockerfile: containers/front/Dockerfile
+  #   volumes:
+  #     - ./frontend:/code
+  #     - node_modules_volume:/frontend/node_modules
+  #   command: sh -c "npm run dev"
+  #   ports:
+  #     - '3000:3000'
+  #   environment:
+  #     - CHOKIDAR_USEPOLLING=true
+  #     - NEXT_PUBLIC_RESTAPI_URL=http://localhost/back
 
   localstack:
     image: localstack/localstack
@@ -72,29 +82,29 @@ services:
     ports:
       - '4566:4566'
     environment:
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_PROFILE
-
-  front:
-    container_name: front
-    build:
-      context: .
-      dockerfile: containers/front/Dockerfile
+      - SERVICES=sns,ses,sqs
+      - AWS_ACCESS_KEY_ID=localstack
+      - AWS_SECRET_ACCESS_KEY=localstack
+      - DEBUG=1
     volumes:
-      - ./frontend:/code
-      - node_modules_volume:/frontend/node_modules
-    command: sh -c "npm run dev"
-    ports:
-      - '3000:3000'
-      - '3030:3030'
+      - localstack_data:/tmp/localstack/data
+      - localstack_bin:/var/lib/localstack
+
+  doc:
+    image: swaggerapi/swagger-ui
+    container_name: doc
+    volumes:
+      - ./doc/openapi.yml:/usr/share/nginx/html/openapi.yml
     environment:
-      - CHOKIDAR_USEPOLLING=true
-      - NEXT_PUBLIC_RESTAPI_URL=http://localhost/back
+      API_URL: openapi.yml
+    ports:
+      - 9000:8080
 
 volumes:
   db_data:
   static:
+  localstack_data:
+  localstack_bin:
   node_modules_volume:
 
 networks:

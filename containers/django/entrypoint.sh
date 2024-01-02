@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
 
+poetry run python manage.py makemigrations
 poetry run python manage.py migrate
 
 if [ $DJANGO_SETTINGS_MODULE = "project.settings.local" ]

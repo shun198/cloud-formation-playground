@@ -1,10 +1,15 @@
-RUN_TERRAFORM = docker-compose -f infra/docker-compose.yml run --rm terraform
 CONTAINER_NAME = app
 RUN_APP = docker-compose exec $(CONTAINER_NAME)
 RUN_POETRY =  $(RUN_APP) poetry run
 RUN_DJANGO = $(RUN_POETRY) python manage.py
 RUN_PYTEST = $(RUN_POETRY) pytest
-DOCS = docs
+RUN_NPM = npm run 
+FRONTEND_PATH = --prefix frontend
+RUN_TERRAFORM = docker-compose -f infra/docker-compose.yml run --rm terraform
+
+prepare:
+	npm install
+	docker-compose up -d --build
 
 up:
 	docker-compose up -d
@@ -12,11 +17,11 @@ up:
 build:
 	docker-compose build
 
+install:
+	npm install $(FRONTEND_PATH)
+
 down:
 	docker-compose down
-
-clean:
-	docker-compose down --rmi all --volumes --remove-orphans
 
 loaddata:
 	$(RUN_DJANGO) loaddata fixture.json
@@ -39,33 +44,27 @@ superuser:
 test:
 	$(RUN_PYTEST)
 
-test-cov:
-	$(RUN_PYTEST) --cov
-
-docs:
-	$(RUN_POETRY) pdoc application/tests --html -o $(DOCS) --force
-
 format:
 	$(RUN_POETRY) black .
 	$(RUN_POETRY) isort .
+	$(RUN_NPM) format $(FRONTEND_PATH)
 
 update:
 	$(RUN_APP) poetry update
+	npm update $(FRONTEND_PATH)
 
 db:
 	docker exec -it db bash
 
 pdoc:
-	$(RUN_APP) env CI_MAKING_DOCS=1 poetry run pdoc -o docs application/tests/
+	$(RUN_APP) env CI_MAKING_DOCS=1 poetry run pdoc -o docs application
+
+
+collectstatic:
+	$(RUN_DJANGO) collectstatic
 
 init:
 	$(RUN_TERRAFORM) init
-	-@ $(RUN_TERRAFORM) workspace new prd
-	-@ $(RUN_TERRAFORM) workspace new stg
-	-@ $(RUN_TERRAFORM) workspace new dev
-
-workspace:
-	$(RUN_TERRAFORM) workspace list
 
 fmt:
 	$(RUN_TERRAFORM) fmt
@@ -76,14 +75,8 @@ validate:
 show:
 	$(RUN_TERRAFORM) show
 
-plan:
-	$(RUN_TERRAFORM) plan
-
 apply:
 	$(RUN_TERRAFORM) apply -auto-approve
 
-graph:
-	$(RUN_TERRAFORM) graph | dot -Tsvg > graph.svg
-
 destroy:
-	$(RUN_TERRAFORM) destroy -auto-approve
+	$(RUN_TERRAFORM) destroy
