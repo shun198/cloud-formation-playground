@@ -204,6 +204,15 @@ Resources:
   # -------------------------------------
   # Listener
   # -------------------------------------
+  ALBListenerHTTP:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroup
+      LoadBalancerArn: !Ref InternetALB
+      Port: 80
+      Protocol: HTTP
   # ALBListenerHTTPS:
   #   Type: AWS::ElasticLoadBalancingV2::Listener
   #   Properties:
