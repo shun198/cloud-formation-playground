@@ -235,11 +235,11 @@ Resources:
       ServiceName: !Sub ${ProjectName}-${Environment}-back-service
       SchedulingStrategy: REPLICA
       DesiredCount: !Ref ECSTaskDesiredCount
-      # DeploymentConfiguration:
-      #   MinimumHealthyPercent: 100
-      #   MaximumPercent: 200
-      # DeploymentController:
-      #   Type: CODE_DEPLOY
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+      DeploymentController:
+        Type: CODE_DEPLOY
       LoadBalancers:
         - TargetGroupArn: !Ref ALBTargetGroupArn
           ContainerPort: 80
