@@ -19,8 +19,8 @@ phases:
       - echo Build completed on `date`
       - echo Pushing the Docker images...
       - docker push $ECR_NGINX_REPOSITORY_URI:$IMAGE_TAG
-      - echo Writing imageDetail json...
-      - printf '{"Version":"1.0","ImageURI":"%s"}' $ECR_NGINX_REPOSITORY_URI:$IMAGE_TAG > imageDetail.json
+      - echo Writing imagedefinitions.json...
+      - printf '{"Version":"1.0","ImageURI":"%s"}' $ECR_DJANGO_REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 artifacts:
   files:
-    - imageDetail.json
+    - imagedefinitions.json

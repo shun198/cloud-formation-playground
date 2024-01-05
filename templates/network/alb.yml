@@ -4,12 +4,13 @@ Description: "ALB Stack"
 # -------------------------------------
 # Mappings
 # -------------------------------------
-# Mappings:
-#   RegionMap:
-#     ap-northeast-1:
-#       ELBAccountID: XXXXXXXXXXXX
-#     ap-northeast-3:
-#       ELBAccountID: XXXXXXXXXXXX
+Mappings:
+  # 使用する可能性のある "国内リージョン" のみを列挙
+  DomainsMap:
+    Environment:
+      dev: api.shun-practice.com
+      stg: api.shun-practice.com
+      prd: api.shun-practice.com
 
 # -------------------------------------
 # Metadata
@@ -27,14 +28,15 @@ Metadata:
           default: "ELB Configuration"
         Parameters:
           - VPCID
+          - HostZoneID
           - ALBPublicSubnet1
           - ALBPublicSubnet2
           - ALBSecurityGroupID
-          # - ACMCertificateArn
+          - ACMCertificateArn
           - HealthCheckPath
           - DeletionProtectionEnabled
           - IdleTimeoutSeconds
-          # - ELBSecurityPolicy
+          - ELBSecurityPolicy
           # - AccessLogsEnabled
 
 # -------------------------------------
@@ -55,6 +57,9 @@ Parameters:
       - stg
       - prd
     ConstraintDescription: "Environment must be select."
+  HostZoneID:
+    Type: AWS::Route53::HostedZone::Id
+    Description: "Select the Route 53 hosted zone ID"
   VPCID:
     Description: "Select the VPC ID."
     Type: AWS::EC2::VPC::Id
@@ -67,9 +72,9 @@ Parameters:
   ALBSecurityGroupID:
     Description: "Select the Security Group ID for ALB."
     Type: AWS::EC2::SecurityGroup::Id
-  # ACMCertificateArn:
-  #   Description: "Enter the Certificate ARN. (ex: arn:aws:acm:<AWS_REGION>:<AWS_ACCOUNT_ID>:certificate/<ACMCertificateID>)"
-  #   Type: String
+  ACMCertificateArn:
+    Description: "Enter the Certificate ARN. (ex: arn:aws:acm:<AWS_REGION>:<AWS_ACCOUNT_ID>:certificate/<ACMCertificateID>)"
+    Type: String
   # ALB からのヘルスチェックに応答するパス
   HealthCheckPath:
     Description: "Enter the path respond to health checks from ALB."
@@ -88,12 +93,12 @@ Parameters:
     Description: "Enter the ALB idle timeout seconds. (default: 60)"
     Type: String
     Default: 60
-  # ELBSecurityPolicy:
-  #   Description: "Select the ELB security policies."
-  #   Type: String
-  #   AllowedValues:
-  #     - ELBSecurityPolicy-TLS-1-2-Ext-2018-06
-  #     - ELBSecurityPolicy-TLS13-1-2-2021-06
+  ELBSecurityPolicy:
+    Description: "Select the ELB security policies."
+    Type: String
+    AllowedValues:
+      - ELBSecurityPolicy-TLS-1-2-Ext-2018-06
+      - ELBSecurityPolicy-TLS13-1-2-2021-06
   # アクセスログ
   # AccessLogsEnabled:
   #   Description: "Select whether to enable access logs."
@@ -212,37 +217,45 @@ Resources:
           TargetGroupArn: !Ref ALBTargetGroup
       LoadBalancerArn: !Ref InternetALB
       Port: 80
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref ACMCertificateArn
+      SslPolicy: !Ref ELBSecurityPolicy
+  ALBListenerHTTPS:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupBlue
+      LoadBalancerArn: !Ref InternetALB
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref ACMCertificateArn
+      SslPolicy: !Ref ELBSecurityPolicy
+  ALBListenerHTTPTest:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupBlue
+      LoadBalancerArn: !Ref InternetALB
+      Port: 8080
       Protocol: HTTP
-  # ALBListenerHTTPS:
-  #   Type: AWS::ElasticLoadBalancingV2::Listener
-  #   Properties:
-  #     DefaultActions:
-  #       - Type: forward
-  #         TargetGroupArn: !Ref ALBTargetGroupBlue
-  #     LoadBalancerArn: !Ref InternetALB
-  #     Port: 443
-  #     Protocol: HTTPS
-  #     Certificates:
-  #       - CertificateArn: !Ref ACMCertificateArn
-  #     SslPolicy: !Ref ELBSecurityPolicy
-  # ALBListenerHTTPTest:
-  #   Type: AWS::ElasticLoadBalancingV2::Listener
-  #   Properties:
-  #     DefaultActions:
-  #       - Type: forward
-  #         TargetGroupArn: !Ref ALBTargetGroupBlue
-  #     LoadBalancerArn: !Ref InternetALB
-  #     Port: 8080
-  #     Protocol: HTTP
-  # ALBListenerHTTPTest:
-  #   Type: AWS::ElasticLoadBalancingV2::Listener
-  #   Properties:
-  #     DefaultActions:
-  #       - Type: forward
-  #         TargetGroupArn: !Ref ALBTargetGroupBlue
-  #     LoadBalancerArn: !Ref InternetALB
-  #     Port: 8080
-  #     Protocol: HTTP
+
+
+  # -------------------------------------
+  # Route 53
+  # -------------------------------------
+  ALBAliasRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostZoneID
+      Name: !FindInMap [ DomainsMap, Environment, !Ref Environment ]
+      Type: A
+      AliasTarget:
+        HostedZoneId: !GetAtt InternetALB.CanonicalHostedZoneID
+        DNSName: !GetAtt InternetALB.DNSName
 
   # -------------------------------------
   # S3 Bucket For ALB Access Logs (Use only staging and production)

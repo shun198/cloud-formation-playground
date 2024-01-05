@@ -77,7 +77,7 @@ Resources:
       ToPort: 80
       CidrIp: 0.0.0.0/0
       Description: "from my alb sg"
-  ALBSGIngressHTTPS1:
+  ALBSGIngressHTTPS:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       GroupId: !Ref ALBSG
@@ -87,16 +87,15 @@ Resources:
       CidrIp: 0.0.0.0/0
       Description: "from my alb sg"
   # # Use only when Blue/Green Deployment
-  # ALBSGIngressHTTPTest:
-  #   Type: AWS::EC2::SecurityGroupIngress
-  #   Properties:
-  #     GroupId: !Ref ALBSG
-  #     IpProtocol: tcp
-  #     FromPort: 8080
-  #     ToPort: 8080
-  #     CidrIp: 0.0.0.0/0
-  #     Description: "for blue/green deployment"
-  
+  ALBSGIngressHTTPTest:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref ALBSG
+      IpProtocol: tcp
+      FromPort: 8080
+      ToPort: 8080
+      CidrIp: 0.0.0.0/0
+      Description: "for blue/green deployment"
   # For ECS Fargate
   FargateSG:
     Type: AWS::EC2::SecurityGroup
@@ -132,15 +131,15 @@ Resources:
       SourceSecurityGroupId: !Ref ALBSG
       Description: "from alb"
   # Use only when Blue/Green Deployment
-  # FargateSGIngressHTTPTest:
-  #   Type: AWS::EC2::SecurityGroupIngress
-  #   Properties:
-  #     GroupId: !Ref FargateSG
-  #     IpProtocol: tcp
-  #     FromPort: 8080
-  #     ToPort: 8080
-  #     # SourceSecurityGroupId: !Ref ALBSG
-  #     Description: "from alb (for blue/green deployment)"
+  FargateSGIngressHTTPTest:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref FargateSG
+      IpProtocol: tcp
+      FromPort: 8080
+      ToPort: 8080
+      # SourceSecurityGroupId: !Ref ALBSG
+      Description: "from alb (for blue/green deployment)"
   # For RDS (PostgreSQL)
   RDSForPostgreSQLSG:
     Type: AWS::EC2::SecurityGroup

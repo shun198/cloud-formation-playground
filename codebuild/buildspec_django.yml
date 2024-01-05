@@ -1,3 +1,4 @@
+# https://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-env-vars.html
 version: 0.2
 phases:
   pre_build:
@@ -19,8 +20,8 @@ phases:
       - echo Build completed on `date`
       - echo Pushing the Docker images...
       - docker push $ECR_DJANGO_REPOSITORY_URI:$IMAGE_TAG
-      - echo Writing imageDetail json...
-      - printf '{"Version":"1.0","ImageURI":"%s"}' $ECR_DJANGO_REPOSITORY_URI:$IMAGE_TAG > imageDetail.json
+      - echo Writing imagedefinitions.json...
+      - printf '{"Version":"1.0","ImageURI":"%s"}' $ECR_DJANGO_REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 artifacts:
   files:
-    - imageDetail.json
+    - imagedefinitions.json
