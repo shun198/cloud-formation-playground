@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "S3 Bucket Stack For Backend"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter"
+    Default: my-project
+  Environment:
+    Description: "Select the environment"
+    Type: String
+    AllowedValues: [dev, stg, prd]
+    ConstraintDescription: "Environment must be select"
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # 画像保存用 S3 Bucket
+  ImageStorageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub ${ProjectName}-${Environment}-img
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+# -------------------------------------
+# Output
+# -------------------------------------
+Outputs:
+  ImageStorageBucketName:
+    Value: !Ref ImageStorageBucket
+  ImageStorageBucketArn:
+    Value: !GetAtt ImageStorageBucket.Arn
+  ImageStorageBucketDomainName:
+    Value: !GetAtt ImageStorageBucket.RegionalDomainName

@@ -1,0 +1,111 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "S3 Bucket Stack"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter"
+    Default: my-project
+  Environment:
+    Description: "Select the environment"
+    Type: String
+    AllowedValues: [dev, stg, prd]
+    ConstraintDescription: "Environment must be select"
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # CloudFront Access Logs Storage
+  # -------------------------------------
+  AccessLogsStorageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
+      AccessControl: LogDeliveryWrite
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      BucketName: !Join
+        - "-"
+        - - !Sub "${ProjectName}-${Environment}-assets-access-logs"
+          - !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId]]]]
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToGlacierAfter365Days
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: 365
+                StorageClass: GLACIER
+          - Id: ExpireAfter5Years
+            Status: Enabled
+            ExpirationInDays: 1825
+
+  # -------------------------------------
+  # S3
+  # -------------------------------------
+  # For Static Website Hosting
+  AssetsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join
+        - "-"
+        - - !Sub "${ProjectName}-${Environment}-assets-with-oac"
+          - !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId]]]]
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LoggingConfiguration:
+        DestinationBucketName: !Ref AccessLogsStorageBucket
+        LogFilePrefix: origin/
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  AccessLogsStorageBucketName:
+    Value: !Ref AccessLogsStorageBucket
+  AssetsBucketName:
+    Value: !Ref AssetsBucket
+  AccessLogsStorageBucketArn:
+    Value: !GetAtt AccessLogsStorageBucket.Arn
+  AssetsBucketArn:
+    Value: !GetAtt AssetsBucket.Arn
+  AccessLogsStorageBucketDomainName:
+    Value: !GetAtt AccessLogsStorageBucket.RegionalDomainName
+  AssetsBucketDomainName:
+    Value: !GetAtt AssetsBucket.RegionalDomainName

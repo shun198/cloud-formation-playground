@@ -32,7 +32,7 @@ Metadata:
           - ALBPublicSubnet1
           - ALBPublicSubnet2
           - ALBSecurityGroupID
-          # - ACMCertificateArn
+          - ACMCertificateArn
           - HealthCheckPath
           - DeletionProtectionEnabled
           - IdleTimeoutSeconds
@@ -72,9 +72,9 @@ Parameters:
   ALBSecurityGroupID:
     Description: "Select the Security Group ID for ALB."
     Type: AWS::EC2::SecurityGroup::Id
-  # ACMCertificateArn:
-  #   Description: "Enter the Certificate ARN. (ex: arn:aws:acm:<AWS_REGION>:<AWS_ACCOUNT_ID>:certificate/<ACMCertificateID>)"
-  #   Type: String
+  ACMCertificateArn:
+    Description: "Enter the Certificate ARN. (ex: arn:aws:acm:<AWS_REGION>:<AWS_ACCOUNT_ID>:certificate/<ACMCertificateID>)"
+    Type: String
   # ALB からのヘルスチェックに応答するパス
   HealthCheckPath:
     Description: "Enter the path respond to health checks from ALB."
@@ -218,21 +218,18 @@ Resources:
       LoadBalancerArn: !Ref InternetALB
       Port: 80
       Protocol: HTTP
-      # Certificates:
-      #   - CertificateArn: !Ref ACMCertificateArn
-      # SslPolicy: !Ref ELBSecurityPolicy
-  # ALBListenerHTTPS:
-  #   Type: AWS::ElasticLoadBalancingV2::Listener
-  #   Properties:
-  #     DefaultActions:
-  #       - Type: forward
-  #         TargetGroupArn: !Ref ALBTargetGroupBlue
-  #     LoadBalancerArn: !Ref InternetALB
-  #     Port: 443
-  #     Protocol: HTTPS
-  #     Certificates:
-  #       - CertificateArn: !Ref ACMCertificateArn
-  #     SslPolicy: !Ref ELBSecurityPolicy
+  ALBListenerHTTPS:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupBlue
+      LoadBalancerArn: !Ref InternetALB
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref ACMCertificateArn
+      SslPolicy: !Ref ELBSecurityPolicy
   ALBListenerHTTPTest:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -256,47 +253,6 @@ Resources:
   #     AliasTarget:
   #       HostedZoneId: !GetAtt InternetALB.CanonicalHostedZoneID
   #       DNSName: !GetAtt InternetALB.DNSName
-
-  # -------------------------------------
-  # S3 Bucket For ALB Access Logs (Use only staging and production)
-  # -------------------------------------
-  # LogsBucket:
-  #   Condition: IsEnabledAccessLogs
-  #   Type: AWS::S3::Bucket
-  #   Properties:
-  #     BucketName: !Join
-  #       - "-"
-  #       - - !Sub "${ProjectName}-${Environment}-alb-access-logs"
-  #         - !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId]]]]
-  #     BucketEncryption:
-  #       ServerSideEncryptionConfiguration:
-  #         - ServerSideEncryptionByDefault:
-  #             SSEAlgorithm: AES256
-  #     PublicAccessBlockConfiguration:
-  #       BlockPublicAcls: true
-  #       BlockPublicPolicy: true
-  #       IgnorePublicAcls: true
-  #       RestrictPublicBuckets: true
-  #     LifecycleConfiguration:
-  #       Rules:
-  #         - Id: DeleteAfter365days
-  #           Status: Enabled
-  #           ExpirationInDays: 365
-  # LogsBucketPolicy:
-  #   Condition: IsEnabledAccessLogs
-  #   Type: AWS::S3::BucketPolicy
-  #   Properties:
-  #     Bucket: !Ref LogsBucket
-  #     PolicyDocument:
-  #       Version: 2012-10-17
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             # S3 バケットポリシーに使用する ELB Account ID
-  #             AWS: !FindInMap [RegionMap, !Ref AWS::Region, ELBAccountID]
-  #           Action:
-  #             - s3:PutObject
-  #           Resource: !Sub arn:aws:s3:::${LogsBucket}/AWSLogs/${AWS::AccountId}/*
 
 # -------------------------------------
 # Output parameters
