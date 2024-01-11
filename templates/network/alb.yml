@@ -32,7 +32,7 @@ Metadata:
           - ALBPublicSubnet1
           - ALBPublicSubnet2
           - ALBSecurityGroupID
-          - ACMCertificateArn
+          # - ACMCertificateArn
           - HealthCheckPath
           - DeletionProtectionEnabled
           - IdleTimeoutSeconds
@@ -72,9 +72,9 @@ Parameters:
   ALBSecurityGroupID:
     Description: "Select the Security Group ID for ALB."
     Type: AWS::EC2::SecurityGroup::Id
-  ACMCertificateArn:
-    Description: "Enter the Certificate ARN. (ex: arn:aws:acm:<AWS_REGION>:<AWS_ACCOUNT_ID>:certificate/<ACMCertificateID>)"
-    Type: String
+  # ACMCertificateArn:
+  #   Description: "Enter the Certificate ARN. (ex: arn:aws:acm:<AWS_REGION>:<AWS_ACCOUNT_ID>:certificate/<ACMCertificateID>)"
+  #   Type: String
   # ALB からのヘルスチェックに応答するパス
   HealthCheckPath:
     Description: "Enter the path respond to health checks from ALB."
@@ -218,18 +218,18 @@ Resources:
       LoadBalancerArn: !Ref InternetALB
       Port: 80
       Protocol: HTTP
-  ALBListenerHTTPS:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref ALBTargetGroupBlue
-      LoadBalancerArn: !Ref InternetALB
-      Port: 443
-      Protocol: HTTPS
-      Certificates:
-        - CertificateArn: !Ref ACMCertificateArn
-      SslPolicy: !Ref ELBSecurityPolicy
+  # ALBListenerHTTPS:
+  #   Type: AWS::ElasticLoadBalancingV2::Listener
+  #   Properties:
+  #     DefaultActions:
+  #       - Type: forward
+  #         TargetGroupArn: !Ref ALBTargetGroupBlue
+  #     LoadBalancerArn: !Ref InternetALB
+  #     Port: 443
+  #     Protocol: HTTPS
+  #     Certificates:
+  #       - CertificateArn: !Ref ACMCertificateArn
+  #     SslPolicy: !Ref ELBSecurityPolicy
   ALBListenerHTTPTest:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
