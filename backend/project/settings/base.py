@@ -164,6 +164,15 @@ CORS_ALLOWED_ORIGINS = django_settings.TRUSTED_ORIGINS.split()
 # 30分だけ許可
 CORS_PREFLIGHT_MAX_AGE = 60 * 30
 
+# クッキーとCSRFの設定
+SESSION_COOKIE_SAMESITE = "None"
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_DOMAIN = django_settings.CSRF_COOKIE_DOMAIN
+CSRF_TRUSTED_ORIGINS = django_settings.TRUSTED_ORIGINS.split(" ")
+
 # ログ設定
 dictConfig(ConfFile.get()["logging"])
 

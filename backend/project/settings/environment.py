@@ -17,6 +17,7 @@ class DjangoSettings(BaseSettings):
     SLACK_ENDPOINT_URL: str = "http://test"
     BASE_URL: str = "http://localhost"
     DJANGO_SETTINGS_MODULE: str = "project.settings.local"
+    CSRF_COOKIE_DOMAIN: str = ""
 
 
 class AwsSettings(BaseSettings):

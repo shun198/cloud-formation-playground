@@ -1,0 +1,184 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "CloudFront Stack"
+
+# -------------------------------------
+# Mappings
+# -------------------------------------
+Mappings:
+  DomainsMap:
+    Environment:
+      dev: shun-practice.com
+      stg: shun-practice.com
+      prd: shun-practice.com
+  CachePolicyIds:
+    CachingOptimized:
+      Id: uuid
+    CachingDisabled:
+      Id: uuid
+    CachingOptimizedForUncompressedObjects:
+      Id: uuid
+    Elemental-MediaPackage:
+      Id: uuid
+  ResponseHeadersPolicyIds:
+    CORS-and-SecurityHeadersPolicy:
+      Id: uuid
+    CORS-With-Preflight:
+      Id: uuid
+    CORS-with-preflight-and-SecurityHeadersPolicy:
+      Id: uuid
+    SecurityHeadersPolicy:
+      Id: uuid
+    SimpleCORS:
+      Id: uuid
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "Route 53 Configuration"
+        Parameters:
+          - HostZoneID
+      - Label:
+          default: "CloudFront Configuration"
+        Parameters:
+          - CloudFrontHostZoneID
+          - ACMPublicCertificateArn
+          - CachePolicy
+          - ResponseHeadersPolicy
+          - AssetsBucketDomainName
+          - AccessLogsStorageBucketDomainName
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter"
+    Default: my-project
+  Environment:
+    Description: "Select the environment"
+    Type: String
+    AllowedValues: [dev, stg, prd]
+    ConstraintDescription: "Environment must be select"
+  HostZoneID:
+    Description: "Select the Route 53 Hosted Zone ID"
+    Type: AWS::Route53::HostedZone::Id
+  CloudFrontHostZoneID:
+    Description: "Enter the Hosted Zone ID to be used in the CloudFront distribution alias resource record set"
+    Type: String
+    Default: ulid
+    AllowedValues: [ulid]
+  ACMPublicCertificateArn:
+    Description: "Enter the ACM public certificate ARN for global region"
+    Type: String
+  CachePolicy:
+    Description: "Select the CloudFront cache policy (Recommended for S3: CachingOptimized)"
+    Type: String
+    Default: CachingOptimized
+    AllowedValues:
+      - CachingOptimized
+      - CachingDisabled
+      - CachingOptimizedForUncompressedObjects
+      - Elemental-MediaPackage
+  ResponseHeadersPolicy:
+    Description: "Select the CloudFront response headers policy"
+    Type: String
+    Default: SecurityHeadersPolicy
+    AllowedValues:
+      - CORS-and-SecurityHeadersPolicy
+      - CORS-With-Preflight
+      - CORS-with-preflight-and-SecurityHeadersPolicy
+      - SecurityHeadersPolicy
+      - SimpleCORS
+    Type: String
+  AssetsBucketDomainName:
+    Description: "Enter the S3 bucket region domain name for static web hosting (ex: example-assets-bucket.s3.ap-northeast-1.amazonaws.com)"
+    Type: String
+  AccessLogsStorageBucketDomainName:
+    Description: "Enter the S3 bucket region domain name for CloudFront access logs (ex: example-access-logs-bucket.s3.ap-northeast-1.amazonaws.com)"
+    Type: String
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # Route 53
+  # -------------------------------------
+  CloudFrontAliasRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostZoneID
+      Name: !FindInMap [DomainsMap, Environment, !Ref Environment]
+      Type: A
+      AliasTarget:
+        HostedZoneId: !Ref CloudFrontHostZoneID
+        DNSName: !GetAtt AssetsDistribution.DomainName
+  # -------------------------------------
+  # CloudFront Distribution
+  # -------------------------------------
+  AssetsDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+        - Id: S3Origin
+          DomainName: !Ref AssetsBucketDomainName
+          S3OriginConfig:
+            OriginAccessIdentity: ""
+          OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
+        Enabled: true
+        DefaultRootObject: index.html
+        Comment: "S3 Static Website Hosting Distribution"
+        CustomErrorResponses:
+          - ErrorCachingMinTTL: 0
+            ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /404/index.html
+        DefaultCacheBehavior:
+          # CachingOptimized
+          CachePolicyId: !FindInMap [CachePolicyIds, !Ref CachePolicy , Id]
+          # SecurityHeadersPolicy
+          ResponseHeadersPolicyId: !FindInMap [ResponseHeadersPolicyIds, !Ref ResponseHeadersPolicy, Id]
+        HttpVersion: http2
+        ViewerCertificate:
+          AcmCertificateArn: !Ref ACMPublicCertificateArn
+          MinimumProtocolVersion: TLSv1.2_2021
+          SslSupportMethod: sni-only
+        Aliases:
+          - !FindInMap [DomainsMap, Environment, !Ref Environment]
+        IPV6Enabled: false
+        Logging:
+          Bucket: !Ref AccessLogsStorageBucketDomainName
+          IncludeCookies: false
+          Prefix: origin/
+  # -------------------------------------
+  # CloudFront OAC
+  # -------------------------------------
+  CloudFrontOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Description: "Origin Access Control For S3 Static Website Hosting"
+        Name: !Sub ${ProjectName}-${Environment}-S3OAC
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  AssetsDistributionID:
+    Value: !Ref AssetsDistribution

@@ -1,6 +1,6 @@
 """DEV環境用の設定"""
 from .base import *
-from .environment import aws_settings
+from .environment import aws_settings, django_settings
 
 DEBUG = False
 ROOT_URLCONF = "project.urls.base"
@@ -20,3 +20,4 @@ DEFAULT_FROM_EMAIL = aws_settings.DEFAULT_FROM_EMAIL
 DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 STATICFILES_STORAGE = "storages.backends.s3boto3.S3StaticStorage"
 AWS_STORAGE_BUCKET_NAME = aws_settings.AWS_STORAGE_BUCKET_NAME
+

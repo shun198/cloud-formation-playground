@@ -169,16 +169,16 @@ function InviteUserDialog() {
               defaultValue="0"
               onChange={handleChange}
             >
-              <FormControlLabel
+              {/* <FormControlLabel
                 value="0"
-                control={<Radio {...register("role", { value: "0" })} />}
+                control={<Radio {...register("role", { value: 0 })} />}
                 label="管理者"
               />
               <FormControlLabel
                 value="1"
-                control={<Radio {...register("role", { value: "1" })} />}
+                control={<Radio {...register("role", { value: 1 })} />}
                 label="一般"
-              />
+              /> */}
             </RadioGroup>
           </DialogContent>
           <DialogActions>

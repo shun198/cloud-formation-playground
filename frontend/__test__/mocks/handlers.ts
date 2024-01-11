@@ -1,5 +1,5 @@
-import { AuthInfoHandlers } from "./authInfo";
+// import { AuthInfoHandlers } from "./authInfo";
 
-const handlers = [...AuthInfoHandlers];
+// const handlers = [...AuthInfoHandlers];
 
-export default handlers;
+// export default handlers;

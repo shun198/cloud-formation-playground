@@ -66,7 +66,7 @@ function UserList() {
     }
   };
 
-  const switchHandler = (switchData: { id: String }) => {
+  const switchHandler = (switchData: { id: string }) => {
     fetchActive(switchData.id);
   };
 
@@ -145,7 +145,7 @@ function UserList() {
     }
   }, [loggedIn]);
 
-  if (!data || !data.results) return null;
+  // if (!data || !data.results) return null;
 
   return (
     <div className="customer-list">
@@ -182,7 +182,7 @@ function UserList() {
               <TableCell align="center" className="font-bold"></TableCell>
             </TableRow>
           </TableHead>
-          {data.results.map((item, index) => (
+          {data.map((item, index) => (
             <TableBody key={index}>
               <TableCell align="center">{item.employee_number}</TableCell>
               <TableCell align="center">{item.username}</TableCell>
@@ -191,7 +191,7 @@ function UserList() {
               <TableCell align="center">
                 <Switch
                   checked={item.is_active}
-                  onChange={() => switchHandler({ id: item.id })}
+                  onChange={() => switchHandler({ id: String(item.id) })}
                 />
               </TableCell>
               <TableCell align="center">
@@ -201,7 +201,7 @@ function UserList() {
                   variant="contained"
                   color="success"
                   className="w-[100px] my-[10px]"
-                  onClick={() => reinviteUserHandler(item.id)}
+                  onClick={() => reinviteUserHandler(String(item.id))}
                 >
                   再送信
                   <SendIcon />

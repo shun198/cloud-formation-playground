@@ -1,0 +1,340 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "CodePipeline Stack For Frontend"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "GitHub Configuration"
+        Parameters:
+          - FrontEndRepositoryName
+          - SourceBranchName
+      - Label:
+          default: "Application Configuration"
+        Parameters:
+          - SSMParameterStoreForBackendServerURL
+      - Label:
+          default: "CodePipeline Configuration"
+        Parameters:
+          - CodeDeployTargetBucketName
+          - CodeStarConnectionArn
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter"
+    Default: my-project
+  Environment:
+    Description: "Select the environment"
+    Type: String
+    AllowedValues: [dev, stg, prd]
+    ConstraintDescription: "Environment must be select"
+  FrontEndRepositoryName:
+    Description: "Enter the target GitHub frontend repository name (ex: shun198/cloud-formation-playground)"
+    Type: String
+  SourceBranchName:
+    Description: "Enter the source branch name in GitHub frontend repository (ex: main)"
+    Type: String
+  SSMParameterStoreForBackendServerURL:
+    Description: "Enter the parameter store name with backend server URL for API connection (ex: /my-project/back/dev/BACK_SRV_URL)"
+    Type: String
+  CodeDeployTargetBucketName:
+    Description: "Enter the S3 bucket name for CodeDeploy deployment target (ex: my-project-dev-assets-with-origin-access-control-XXXXXXXX)"
+    Type: String
+  CodeStarConnectionArn:
+    Description: "Enter the CodeStar connection ARN. (ex: arn:aws:codestar-connections:<aws_region>:<aws_account_id>:connection/<connection_id>)"
+    Type: String
+
+# -------------------------------------
+# Conditions
+# -------------------------------------
+Conditions:
+  # Prd 環境時のみ適用
+  IsPrdEnv: !Equals [!Ref Environment, prd]
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # IAM
+  # -------------------------------------
+  CodeBuildServiceRolePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub CodeBuildServiceRoleAccessForFrontEnd-${ProjectName}-${Environment}
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource:
+              - !Sub
+                - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${CodeBuildProjectName}
+                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-cbpj" }
+              - !Sub
+                - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${CodeBuildProjectName}:*
+                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-cbpj" }
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:GetObject
+              - s3:GetObjectVersion
+              - s3:GetBucketAcl
+              - s3:GetBucketLocation
+            Resource: !Sub arn:aws:s3:::${ArtifactBucket}*
+          - Effect: Allow
+            Action:
+              - codebuild:CreateReportGroup
+              - codebuild:CreateReport
+              - codebuild:UpdateReport
+              - codebuild:BatchPutTestCases
+              - codebuild:BatchPutCodeCoverages
+            Resource:
+              !Sub
+                - arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/${CodeBuildProjectName}*
+                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-cbpj" }
+          - Effect: Allow
+            Action:
+              - codebuild:StartBuild
+              - codebuild:StopBuild
+              - codebuild:RetryBuild
+            Resource:
+              !Sub
+                - arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CodeBuildProjectName}
+                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-cbpj" }
+
+
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub CodeBuildServiceRoleForFrontEnd-${ProjectName}-${Environment}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /service-role/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - !Ref CodeBuildServiceRolePolicy
+
+  CodePipelineServiceRolePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub CodePipelineServiceRoleAccessForFrontEnd-${ProjectName}-${Environment}
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:*
+            Resource:
+              - !Sub arn:aws:s3:::${ArtifactBucket}*
+          - Effect: Allow
+            Action:
+              - codedeploy:CreateDeployment
+              - codedeploy:GetApplication
+              - codedeploy:GetApplicationRevision
+              - codedeploy:GetDeployment
+              - codedeploy:GetDeploymentConfig
+              - codedeploy:RegisterApplicationRevision
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - codestar-connections:UseConnection
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - codebuild:BatchGetBuilds
+              - codebuild:StartBuild
+              - codebuild:BatchGetBuildBatches
+              - codebuild:StartBuildBatch
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - cloudformation:ValidateTemplate
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - sns:Publish
+            Resource: "*"
+
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub CodePipelineServiceRoleForFrontEnd-${ProjectName}-${Environment}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /service-role/
+      ManagedPolicyArns:
+        - !Ref CodePipelineServiceRolePolicy
+
+  # -------------------------------------
+  # S3
+  # -------------------------------------
+  # For CodePipeline Artifact
+  ArtifactBucket:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${ProjectName}-${Environment}-front-artifact
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteAfter365Days
+            Status: Enabled
+            ExpirationInDays: 365
+
+  # -------------------------------------
+  # CodeBuild
+  # -------------------------------------
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${ProjectName}-${Environment}-front-cbpj
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      BuildBatchConfig:
+        ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                nodejs: latest
+            pre_build:
+              commands:
+                - cd application
+            build:
+              commands:
+                - npm ci
+                - echo NEXT_PUBLIC_BACK_SRV_URL=$NEXT_PUBLIC_BACK_SRV_URL >> .env.production.local
+                - npm run build
+          artifacts:
+            files:
+              - "**/*"
+            base-directory: "./application/out"
+      Environment:
+        PrivilegedMode: true
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: NEXT_PUBLIC_BACK_SRV_URL
+            Type: PARAMETER_STORE
+            Value: !Ref SSMParameterStoreForBackendServerURL
+
+  # -------------------------------------
+  # CodePipeline
+  # -------------------------------------
+  CodePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      Name: !Sub ${ProjectName}-${Environment}-front-pipeline
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeStarSourceConnection
+                Version: 1
+              Configuration:
+                FullRepositoryId: !Ref FrontEndRepositoryName
+                ConnectionArn: !Ref CodeStarConnectionArn
+                BranchName: !Ref SourceBranchName
+                DetectChanges: !If
+                  - IsPrdEnv
+                  - false
+                  - true
+              OutputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: BuildAction
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+              RunOrder: 1
+              InputArtifacts:
+                - Name: SourceArtifact
+              OutputArtifacts:
+                - Name: BuildArtifact
+        - Name: Deploy
+          Actions:
+            - Name: DeployAction
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: 1
+                Provider: S3
+              Configuration:
+                BucketName: !Ref CodeDeployTargetBucketName
+                Extract: true
+              RunOrder: 1
+              InputArtifacts:
+                - Name: BuildArtifact
+              Region: !Ref AWS::Region
+
+# -------------------------------------
+# Output
+# -------------------------------------
+Outputs:
+  CodeBuildServiceRoleArn:
+    Value: !GetAtt CodeBuildServiceRole.Arn
+  CodeBuildProjectArn:
+    Value: !GetAtt CodeBuildProject.Arn
+  CodeBuildProjectName:
+    Value: !Ref CodeBuildProject
+  CodePipelineLogicalID:
+    Value: !Ref CodePipeline
+  CodePipelineServiceRoleID:
+    Value: !GetAtt CodePipelineServiceRole.RoleId
+  ArtifactBucketArn:
+    Value: !GetAtt ArtifactBucket.Arn
+  ArtifactBucketName:
+    Value: !Ref ArtifactBucket

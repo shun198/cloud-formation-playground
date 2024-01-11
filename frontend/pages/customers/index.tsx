@@ -63,7 +63,7 @@ function CustomerList() {
     }
   }, [loggedIn]);
 
-  if (!data || !data.results) return null;
+  // if (!data || !data.results) return null;
 
   return (
     <div className="customer-list">
@@ -95,7 +95,7 @@ function CustomerList() {
               <TableCell align="center" className="font-bold"></TableCell>
             </TableRow>
           </TableHead>
-          {data.results.map((item, index) => {
+          {data.map((item, index) => {
             return (
               <TableBody key={index}>
                 <TableCell align="center">{item.created_at}</TableCell>
@@ -119,12 +119,6 @@ function CustomerList() {
         </Table>
       </div>
       <div>
-        <Pagination
-          count={data.final} //総ページ数
-          color="primary" //ページネーションの色
-          onChange={(e, page) => setPage(page)} //変更されたときに走る関数。第2引数にページ番号が入る
-          page={data.current} //現在のページ番号
-        />
       </div>
     </div>
   );

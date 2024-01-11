@@ -76,7 +76,7 @@ Resources:
     Properties:
       BucketName: !Join
         - "-"
-        - - !Sub "${ProjectName}-${Environment}-assets-with-oac"
+        - - !Sub "${ProjectName}-${Environment}-assets-with-origin-access-control"
           - !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId]]]]
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
