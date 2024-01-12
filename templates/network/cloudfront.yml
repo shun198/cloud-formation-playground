@@ -10,26 +10,32 @@ Mappings:
       dev: shun-practice.com
       stg: shun-practice.com
       prd: shun-practice.com
+  # CachePolicyIdは以下の記事を参照
+  # https://docs.aws.amazon.com/ja_jp/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html
   CachePolicyIds:
     CachingOptimized:
-      Id: uuid
+      Id: 658327ea-f89d-4fab-a63d-7e88639e58f6
     CachingDisabled:
-      Id: uuid
+      Id: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
     CachingOptimizedForUncompressedObjects:
-      Id: uuid
+      Id: b2884449-e4de-46a7-ac36-70bc7f1ddd6d
     Elemental-MediaPackage:
-      Id: uuid
+      Id: 08627262-05a9-4f76-9ded-b50ca2e3a84f
+    Amplify:
+      Id: 2e54312d-136d-493c-8eb9-b001f22f67d2
+  # ResponseHeadersPolicyIdは以下の記事を参照
+  # https://docs.aws.amazon.com/ja_jp/AmazonCloudFront/latest/DeveloperGuide/using-managed-response-headers-policies.html
   ResponseHeadersPolicyIds:
     CORS-and-SecurityHeadersPolicy:
-      Id: uuid
+      Id: e61eb60c-9c35-4d20-a928-2b84e02af89c
     CORS-With-Preflight:
-      Id: uuid
+      Id: 5cc3b908-e619-4b99-88e5-2cf7f45965bd
     CORS-with-preflight-and-SecurityHeadersPolicy:
-      Id: uuid
+      Id: eaab4381-ed33-4a86-88ca-d9558dc6cd63
     SecurityHeadersPolicy:
-      Id: uuid
+      Id: 67f7725c-6f97-4210-82d7-5512b31e9d03
     SimpleCORS:
-      Id: uuid
+      Id: 60669652-455b-4ae9-85a4-c4c02393f86c
 
 # -------------------------------------
 # Metadata
@@ -54,7 +60,6 @@ Metadata:
           - CachePolicy
           - ResponseHeadersPolicy
           - AssetsBucketDomainName
-          - AccessLogsStorageBucketDomainName
 
 # -------------------------------------
 # Parameters
@@ -77,8 +82,6 @@ Parameters:
   CloudFrontHostZoneID:
     Description: "Enter the Hosted Zone ID to be used in the CloudFront distribution alias resource record set"
     Type: String
-    Default: ulid
-    AllowedValues: [ulid]
   ACMPublicCertificateArn:
     Description: "Enter the ACM public certificate ARN for global region"
     Type: String
@@ -101,12 +104,8 @@ Parameters:
       - CORS-with-preflight-and-SecurityHeadersPolicy
       - SecurityHeadersPolicy
       - SimpleCORS
-    Type: String
   AssetsBucketDomainName:
     Description: "Enter the S3 bucket region domain name for static web hosting (ex: example-assets-bucket.s3.ap-northeast-1.amazonaws.com)"
-    Type: String
-  AccessLogsStorageBucketDomainName:
-    Description: "Enter the S3 bucket region domain name for CloudFront access logs (ex: example-access-logs-bucket.s3.ap-northeast-1.amazonaws.com)"
     Type: String
 
 # -------------------------------------
@@ -159,10 +158,7 @@ Resources:
         Aliases:
           - !FindInMap [DomainsMap, Environment, !Ref Environment]
         IPV6Enabled: false
-        Logging:
-          Bucket: !Ref AccessLogsStorageBucketDomainName
-          IncludeCookies: false
-          Prefix: origin/
+
   # -------------------------------------
   # CloudFront OAC
   # -------------------------------------
