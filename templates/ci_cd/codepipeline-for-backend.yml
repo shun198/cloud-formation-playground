@@ -77,13 +77,13 @@ Parameters:
     Description: "Enter the source branch name in GitHub backend repository. (ex: develop or main)"
     Type: String
   DjangoDockerfilePath:
-    Description: "Enter the Django Dockerfile path in GitHub backend repository. (ex: containers/django/Dockerfile.dev)"
+    Description: "Enter the Django Dockerfile path in GitHub backend repository. (ex: containers/django/Dockerfile.prd)"
     Type: String
   NginxDockerfilePath:
-    Description: "Enter the Nginx Dockerfile path in GitHub backend repository. (ex: containers/nginx/Dockerfile.dev)"
+    Description: "Enter the Nginx Dockerfile path in GitHub backend repository. (ex: containers/nginx/Dockerfile.prd)"
     Type: String
   TaskDefinitionTemplatePath:
-    Description: "Enter the ECS Task Definition template path in GitHub backend repository. (ex: ecs/taskdef.dev.json)"
+    Description: "Enter the ECS Task Definition template path in GitHub backend repository. (ex: ecs/taskdef.json)"
     Type: String
   AppSpecTemplatePath:
     Description: "Enter the Codedeploy Appspec template path in GitHub backend repository. (ex: codedeploy/appspec.yml)"

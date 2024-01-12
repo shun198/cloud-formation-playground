@@ -5,16 +5,15 @@ Description: 'CodeStar Connection Stack'
 # Input parameters
 # -------------------------------------
 Parameters:
-  GitHubOrgName:
-    Description: "GitHub organization's name will be set as the prefix of the environment variable name. (default: organization)"
+  GitHubName:
+    Description: "GitHub name will be set as the prefix of the environment variable name. (default: shun198)"
     Type: String
-    Default: organization
+    Default: shun198
   ProviderType:
     Type: String
     Default: GitHub
     AllowedValues:
       - GitHub
-      - GitHubEnterpriseServer
 
 # -------------------------------------
 # Resources
@@ -23,7 +22,7 @@ Resources:
   SourceConnection:
     Type: AWS::CodeStarConnections::Connection
     Properties:
-      ConnectionName: !Sub ${GitHubOrgName}-connection
+      ConnectionName: !Sub ${GitHubName}-connection
       ProviderType: !Ref ProviderType
 
 # -------------------------------------
