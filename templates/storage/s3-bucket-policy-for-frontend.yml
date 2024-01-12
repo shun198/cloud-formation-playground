@@ -11,11 +11,9 @@ Metadata:
           default: "S3 Configuration"
         Parameters:
           - AssetsBucketName
-          - AccessLogsStorageBucketName
           - AssetsBucketArn
-          - AccessLogsStorageBucketArn
           - CloudFrontAssetsDistributionID
-          - CodePipelineServiceRoleID
+          # - CodePipelineServiceRoleID
 
 # -------------------------------------
 # Parameters
@@ -24,21 +22,15 @@ Parameters:
   AssetsBucketName:
     Description: "Enter the S3 assets bucket name (ex: example-assets-with-oac-xxxxxxxx)"
     Type: String
-  AccessLogsStorageBucketName:
-    Description: "Enter the S3 access logs bucket name (ex: example-assets-access-logs-xxxxxxxx)"
-    Type: String
   AssetsBucketArn:
     Description: "Enter the S3 assets bucket ARN (ex: arn:aws:s3:::example-assets-with-oac-xxxxxxxx)"
-    Type: String
-  AccessLogsStorageBucketArn:
-    Description: "Enter the S3 access logs bucket ARN (ex: arn:aws:s3:::example-assets-access-logs-xxxxxxxx)"
     Type: String
   CloudFrontAssetsDistributionID:
     Description: "Enter the CloudFront Distribution ID for assets bucket (ex: XXXXXXXXXXXXXX)"
     Type: String
-  CodePipelineServiceRoleID:
-    Description: "Enter the CodePipeline Service Role ID for frontend (ex: AROAXXXXXXXXXXXXXXXXX)"
-    Type: String
+  # CodePipelineServiceRoleID:
+  #   Description: "Enter the CodePipeline Service Role ID for frontend (ex: AROAXXXXXXXXXXXXXXXXX)"
+  #   Type: String
 
 # -------------------------------------
 # Resources
@@ -65,39 +57,4 @@ Resources:
             Condition:
               StringEquals:
                 AWS:SourceArn: !Sub arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontAssetsDistributionID}
-          - Effect: Allow
-            Principal:
-              AWS: !Ref CodePipelineServiceRoleID
-            Action:
-              - s3:PutObject
-              - s3:PutObjectAcl
-              - s3:PutObjectVersionAcl
-            Resource: !Sub ${AssetsBucketArn}/*
-            Condition:
-              StringLike:
-                aws:userid: !Sub ${CodePipelineServiceRoleID}:*
-          - Effect: Deny
-            Principal: "*"
-            Action: "s3:*"
-            Resource:
-              - !Sub ${AssetsBucketArn}/*
-              - !Ref AssetsBucketArn
-            Condition:
-              Bool:
-                aws:SecureTransport: false
-  # For S3 Access Logs Bucket
-  AccessLogsBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref AccessLogsStorageBucketName
-      PolicyDocument:
-        Statement:
-          - Effect: Deny
-            Principal: "*"
-            Action: "s3:*"
-            Resource:
-              - !Sub ${AccessLogsStorageBucketArn}/*
-              - !Ref AccessLogsStorageBucketArn
-            Condition:
-              Bool:
-                aws:SecureTransport: false
+

@@ -37,7 +37,6 @@ Metadata:
           - DeletionProtectionEnabled
           - IdleTimeoutSeconds
           # - ELBSecurityPolicy
-          # - AccessLogsEnabled
 
 # -------------------------------------
 # Input parameters
@@ -99,23 +98,6 @@ Parameters:
   #   AllowedValues:
   #     - ELBSecurityPolicy-TLS-1-2-Ext-2018-06
   #     - ELBSecurityPolicy-TLS13-1-2-2021-06
-  # アクセスログ
-  # AccessLogsEnabled:
-  #   Description: "Select whether to enable access logs."
-  #   Type: String
-  #   Default: false
-  #   AllowedValues:
-  #     - false
-  #     - true
-
-# -------------------------------------
-# Conditions
-# -------------------------------------
-# Conditions:
-#   # ALB アクセスログ, アクセスログ用 S3 バケット, S3 バケットポリシー用
-#   IsEnabledAccessLogs: !Equals
-#     - !Ref AccessLogsEnabled
-#     - true
 
 # -------------------------------------
 # Resources
@@ -184,17 +166,6 @@ Resources:
           Value: !Ref DeletionProtectionEnabled
         - Key: "idle_timeout.timeout_seconds"
           Value: !Ref IdleTimeoutSeconds
-        # ALB アクセスログを有効化する場合のみ
-        # - Key: "access_logs.s3.enabled"
-        #   Value: !Ref AccessLogsEnabled
-        # - !If
-        #   - IsEnabledAccessLogs
-        #   - Key: "access_logs.s3.bucket"
-        #     Value: !Join
-        #       - "-"
-        #       - - !Sub "${ProjectName}-${Environment}-alb-access-logs"
-        #         - !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId]]]]
-        #   - !Ref AWS::NoValue
       Subnets:
         - !Ref ALBPublicSubnet1
         - !Ref ALBPublicSubnet2

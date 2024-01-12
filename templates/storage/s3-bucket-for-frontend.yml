@@ -34,40 +34,6 @@ Parameters:
 # -------------------------------------
 Resources:
   # -------------------------------------
-  # CloudFront Access Logs Storage
-  # -------------------------------------
-  AccessLogsStorageBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      OwnershipControls:
-        Rules:
-          - ObjectOwnership: ObjectWriter
-      AccessControl: LogDeliveryWrite
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-      BucketName: !Join
-        - "-"
-        - - !Sub "${ProjectName}-${Environment}-assets-access-logs"
-          - !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId]]]]
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      LifecycleConfiguration:
-        Rules:
-          - Id: TransitionToGlacierAfter365Days
-            Status: Enabled
-            Transitions:
-              - TransitionInDays: 365
-                StorageClass: GLACIER
-          - Id: ExpireAfter5Years
-            Status: Enabled
-            ExpirationInDays: 1825
-
-  # -------------------------------------
   # S3
   # -------------------------------------
   # For Static Website Hosting
@@ -83,9 +49,6 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-      LoggingConfiguration:
-        DestinationBucketName: !Ref AccessLogsStorageBucket
-        LogFilePrefix: origin/
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -97,15 +60,9 @@ Resources:
 # Outputs
 # -------------------------------------
 Outputs:
-  AccessLogsStorageBucketName:
-    Value: !Ref AccessLogsStorageBucket
   AssetsBucketName:
     Value: !Ref AssetsBucket
-  AccessLogsStorageBucketArn:
-    Value: !GetAtt AccessLogsStorageBucket.Arn
   AssetsBucketArn:
     Value: !GetAtt AssetsBucket.Arn
-  AccessLogsStorageBucketDomainName:
-    Value: !GetAtt AccessLogsStorageBucket.RegionalDomainName
   AssetsBucketDomainName:
     Value: !GetAtt AssetsBucket.RegionalDomainName

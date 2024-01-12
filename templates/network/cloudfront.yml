@@ -146,10 +146,10 @@ Resources:
             ResponseCode: 200
             ResponsePagePath: /404/index.html
         DefaultCacheBehavior:
-          # CachingOptimized
           CachePolicyId: !FindInMap [CachePolicyIds, !Ref CachePolicy , Id]
-          # SecurityHeadersPolicy
           ResponseHeadersPolicyId: !FindInMap [ResponseHeadersPolicyIds, !Ref ResponseHeadersPolicy, Id]
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
         HttpVersion: http2
         ViewerCertificate:
           AcmCertificateArn: !Ref ACMPublicCertificateArn
