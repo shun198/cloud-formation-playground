@@ -44,6 +44,7 @@ Resources:
         - "-"
         - - !Sub "${ProjectName}-${Environment}-assets-with-origin-access-control"
           - !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId]]]]
+      # S3バケットのアクセス許可
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true

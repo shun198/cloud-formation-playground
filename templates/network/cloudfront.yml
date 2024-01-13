@@ -5,11 +5,6 @@ Description: "CloudFront Stack"
 # Mappings
 # -------------------------------------
 Mappings:
-  DomainsMap:
-    Environment:
-      dev: shun-practice.com
-      stg: shun-practice.com
-      prd: shun-practice.com
   # CachePolicyIdは以下の記事を参照
   # https://docs.aws.amazon.com/ja_jp/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html
   CachePolicyIds:
@@ -79,9 +74,16 @@ Parameters:
   HostZoneID:
     Description: "Select the Route 53 Hosted Zone ID"
     Type: AWS::Route53::HostedZone::Id
-  CloudFrontHostZoneID:
-    Description: "Enter the Hosted Zone ID to be used in the CloudFront distribution alias resource record set"
+  DomainName:
+    Description: "Enter the Route 53 domain name"
     Type: String
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset-aliastarget.html#cfn-route53-recordset-aliastarget-hostedzoneid
+  CloudFrontHostZoneID:
+    Type: String
+    Description: "Select the CloudFront hosted zone ID. (fixed value: Z2FDTNDATAQYW2)"
+    Default: Z2FDTNDATAQYW2
+    AllowedValues:
+      - Z2FDTNDATAQYW2
   ACMPublicCertificateArn:
     Description: "Enter the ACM public certificate ARN for global region"
     Type: String
@@ -119,8 +121,9 @@ Resources:
     Type: AWS::Route53::RecordSet
     Properties:
       HostedZoneId: !Ref HostZoneID
-      Name: !FindInMap [DomainsMap, Environment, !Ref Environment]
+      Name: !Ref DomainName
       Type: A
+      # CloudFront用の設定
       AliasTarget:
         HostedZoneId: !Ref CloudFrontHostZoneID
         DNSName: !GetAtt AssetsDistribution.DomainName
@@ -155,8 +158,6 @@ Resources:
           AcmCertificateArn: !Ref ACMPublicCertificateArn
           MinimumProtocolVersion: TLSv1.2_2021
           SslSupportMethod: sni-only
-        Aliases:
-          - !FindInMap [DomainsMap, Environment, !Ref Environment]
         IPV6Enabled: false
 
   # -------------------------------------
