@@ -158,6 +158,9 @@ Resources:
           AcmCertificateArn: !Ref ACMPublicCertificateArn
           MinimumProtocolVersion: TLSv1.2_2021
           SslSupportMethod: sni-only
+        # 代替ドメイン名の設定に必要
+        Aliases:
+          - !Ref DomainName
         IPV6Enabled: false
 
   # -------------------------------------
