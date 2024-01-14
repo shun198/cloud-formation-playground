@@ -89,4 +89,3 @@ Resources:
       SlackChannelId: !Ref SlackChannelIDForCICDPipeline
       SnsTopicArns:
         - !Sub arn:aws:sns:ap-northeast-1:${AWS::AccountId}:${CICDPipelineTopicName}
-

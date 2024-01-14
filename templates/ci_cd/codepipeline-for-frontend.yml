@@ -57,9 +57,9 @@ Parameters:
   CodeStarConnectionArn:
     Description: "Enter the CodeStar connection ARN. (ex: arn:aws:codestar-connections:<aws_region>:<aws_account_id>:connection/<connection_id>)"
     Type: String
-  CICDPipelineTopicArn:
-    Description: "Enter the CI/CD SNS Topic ARN (ex: arn:aws:sns:<aws_region>:<aws_account_id>:cicd-pipeline)"
-    Type: String
+  # CICDPipelineTopicArn:
+  #   Description: "Enter the CI/CD SNS Topic ARN (ex: arn:aws:sns:<aws_region>:<aws_account_id>:cicd-pipeline)"
+  #   Type: String
 
 # -------------------------------------
 # Resources
@@ -315,18 +315,18 @@ Resources:
   # -------------------------------------
   # CodePipeline Notification
   # -------------------------------------
-  CICDNotificationRule:
-    Type: AWS::CodeStarNotifications::NotificationRule
-    Properties:
-      Name: !Ref CodePipeline
-      Resource: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}
-      DetailType: FULL
-      EventTypeIds:
-        - codepipeline-pipeline-pipeline-execution-failed
-        - codepipeline-pipeline-pipeline-execution-succeeded
-      Targets:
-        - TargetType: SNS
-          TargetAddress: !Ref CICDPipelineTopicArn
+  # CICDNotificationRule:
+  #   Type: AWS::CodeStarNotifications::NotificationRule
+  #   Properties:
+  #     Name: !Ref CodePipeline
+  #     Resource: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}
+  #     DetailType: FULL
+  #     EventTypeIds:
+  #       - codepipeline-pipeline-pipeline-execution-failed
+  #       - codepipeline-pipeline-pipeline-execution-succeeded
+  #     Targets:
+  #       - TargetType: SNS
+  #         TargetAddress: !Ref CICDPipelineTopicArn
 
 # -------------------------------------
 # Output
