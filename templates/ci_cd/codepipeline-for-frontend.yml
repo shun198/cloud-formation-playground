@@ -49,7 +49,7 @@ Parameters:
     Description: "Enter the source branch name in GitHub frontend repository (ex: main)"
     Type: String
   SSMParameterStoreForBackendServerURL:
-    Description: "Enter the parameter store name with backend server URL for API connection (ex: /my-project/back/dev/BACK_SRV_URL)"
+    Description: "Enter the parameter store name with backend server URL for API connection (ex: /my-project/back/dev/NEXT_PUBLIC_BACK_SRV_URL)"
     Type: String
   CodeDeployTargetBucketName:
     Description: "Enter the S3 bucket name for CodeDeploy deployment target (ex: my-project-dev-assets-with-origin-access-control-XXXXXXXX)"
@@ -57,13 +57,6 @@ Parameters:
   CodeStarConnectionArn:
     Description: "Enter the CodeStar connection ARN. (ex: arn:aws:codestar-connections:<aws_region>:<aws_account_id>:connection/<connection_id>)"
     Type: String
-
-# -------------------------------------
-# Conditions
-# -------------------------------------
-Conditions:
-  # Prd 環境時のみ適用
-  IsPrdEnv: !Equals [!Ref Environment, prd]
 
 # -------------------------------------
 # Resources
@@ -87,10 +80,10 @@ Resources:
             Resource:
               - !Sub
                 - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${CodeBuildProjectName}
-                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-cbpj" }
+                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-code-build" }
               - !Sub
                 - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${CodeBuildProjectName}:*
-                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-cbpj" }
+                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-code-build" }
           - Effect: Allow
             Action:
               - s3:PutObject
@@ -109,7 +102,7 @@ Resources:
             Resource:
               !Sub
                 - arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/${CodeBuildProjectName}*
-                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-cbpj" }
+                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-code-build" }
           - Effect: Allow
             Action:
               - codebuild:StartBuild
@@ -118,7 +111,7 @@ Resources:
             Resource:
               !Sub
                 - arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CodeBuildProjectName}
-                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-cbpj" }
+                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-code-build" }
 
 
   CodeBuildServiceRole:
@@ -222,7 +215,7 @@ Resources:
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub ${ProjectName}-${Environment}-front-cbpj
+      Name: !Sub ${ProjectName}-${Environment}-front-code-build
       ServiceRole: !GetAtt CodeBuildServiceRole.Arn
       BuildBatchConfig:
         ServiceRole: !GetAtt CodeBuildServiceRole.Arn
@@ -238,20 +231,20 @@ Resources:
                 nodejs: latest
             pre_build:
               commands:
-                - cd application
+                - cd frontend
             build:
               commands:
                 - npm ci
-                - echo NEXT_PUBLIC_BACK_SRV_URL=$NEXT_PUBLIC_BACK_SRV_URL >> .env.production.local
+                - echo NEXT_PUBLIC_BACK_SRV_URL=$NEXT_PUBLIC_BACK_SRV_URL >> .env
                 - npm run build
           artifacts:
             files:
               - "**/*"
-            base-directory: "./application/out"
+            base-directory: "./frontend/out"
       Environment:
         PrivilegedMode: true
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:5.0
         Type: LINUX_CONTAINER
         EnvironmentVariables:
           - Name: NEXT_PUBLIC_BACK_SRV_URL
@@ -282,10 +275,6 @@ Resources:
                 FullRepositoryId: !Ref FrontEndRepositoryName
                 ConnectionArn: !Ref CodeStarConnectionArn
                 BranchName: !Ref SourceBranchName
-                DetectChanges: !If
-                  - IsPrdEnv
-                  - false
-                  - true
               OutputArtifacts:
                 - Name: SourceArtifact
               RunOrder: 1

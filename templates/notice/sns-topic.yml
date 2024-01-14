@@ -1,0 +1,188 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "SNS Topic Stack"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "KMS Key Configutation"
+        Parameters:
+          - PendingWindowInDays
+          - KMSKeyAliasName
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  PendingWindowInDays:
+    Description: "Enter the number of days to wait before being removed from the stack"
+    Type: Number
+    Default: 30
+    MinValue: 7
+    MaxValue: 30
+  KMSKeyAliasName:
+    Description: "Enter the alias name for SNS KMS key"
+    Type: String
+    Default: alias/sns
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # KMS Key for SNS
+  # -------------------------------------
+  SNSKMSKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: "KMS key for encrypting SNS"
+      PendingWindowInDays: !Ref PendingWindowInDays
+      KeyPolicy:
+        Version: 2012-10-17
+        Id: sns-key
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: kms:*
+            Resource: "*"
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+                - cloudwatch.amazonaws.com
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey
+            Resource: "*"
+  KMSKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Ref KMSKeyAliasName
+      TargetKeyId: !Ref SNSKMSKey
+
+  # -------------------------------------
+  # SNS
+  # -------------------------------------
+  # アラート通知用
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: my-project-alert
+      TopicName: my-project-alert
+      KmsMasterKeyId: !Ref KMSKeyAliasName
+  AlertTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: StandardAlertSNSPolicy
+            Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+                - cloudwatch.amazonaws.com
+            Action:
+              - sns:Publish
+            Resource: !Ref AlertTopic
+            Condition:
+              StringEquals:
+                "AWS:SourceAccount": !Ref AWS::AccountId
+      Topics:
+        - !Ref AlertTopic
+  # ワーニング通知用
+  WarningTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: my-project-warning
+      TopicName: my-project-warning
+      KmsMasterKeyId: !Ref KMSKeyAliasName
+  WarningTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: StandardWarningSNSPolicy
+            Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+                - cloudwatch.amazonaws.com
+            Action:
+              - sns:Publish
+            Resource: !Ref WarningTopic
+            Condition:
+              StringEquals:
+                "AWS:SourceAccount": !Ref AWS::AccountId
+      Topics:
+        - !Ref WarningTopic
+  # 承認フロー通知用
+  ApproveTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: my-project-approve
+      TopicName: my-project-approve
+      KmsMasterKeyId: !Ref KMSKeyAliasName
+  ApproveTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: ApproveSNSPolicy
+            Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - sns:Publish
+            Resource: !Ref ApproveTopic
+            Condition:
+              StringEquals:
+                "AWS:SourceAccount": !Ref AWS::AccountId
+      Topics:
+        - !Ref ApproveTopic
+  # セキュリティイベント通知用
+  SecurityTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: my-project-security
+      TopicName: my-project-security
+      KmsMasterKeyId: !Ref KMSKeyAliasName
+  SecurityTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: SecuritySNSPolicy
+            Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - sns:Publish
+            Resource: !Ref SecurityTopic
+            Condition:
+              StringEquals:
+                "AWS:SourceAccount": !Ref AWS::AccountId
+      Topics:
+        - !Ref SecurityTopic
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  AlertTopicArn:
+    Value: !Ref AlertTopic
+  WarningTopicArn:
+    Value: !Ref WarningTopic
+  ApproveTopicArn:
+    Value: !Ref ApproveTopic
+  SecurityTopicArn:
+    Value: !Ref SecurityTopic
