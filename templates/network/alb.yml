@@ -17,15 +17,15 @@ Metadata:
           default: "ELB Configuration"
         Parameters:
           - VPCID
-          # - HostZoneID
+          - HostZoneID
           - ALBPublicSubnet1
           - ALBPublicSubnet2
           - ALBSecurityGroupID
-          # - ACMCertificateArn
+          - ACMCertificateArn
           - HealthCheckPath
           - DeletionProtectionEnabled
           - IdleTimeoutSeconds
-          # - ELBSecurityPolicy
+          - ELBSecurityPolicy
 
 # -------------------------------------
 # Input parameters
@@ -45,13 +45,13 @@ Parameters:
       - stg
       - prd
     ConstraintDescription: "Environment must be select."
-  # HostZoneID:
-  #   Type: AWS::Route53::HostedZone::Id
-  #   Description: "Select the Route 53 hosted zone ID"
-  # DomainName:
-  #   Description: "Enter the Route 53 domain name"
-  #   Default: api.shun-practice.com
-  #   Type: String
+  HostZoneID:
+    Type: AWS::Route53::HostedZone::Id
+    Description: "Select the Route 53 hosted zone ID"
+  DomainName:
+    Description: "Enter the Route 53 domain name"
+    Default: api.shun-practice.com
+    Type: String
   VPCID:
     Description: "Select the VPC ID."
     Type: AWS::EC2::VPC::Id
@@ -64,9 +64,9 @@ Parameters:
   ALBSecurityGroupID:
     Description: "Select the Security Group ID for ALB."
     Type: AWS::EC2::SecurityGroup::Id
-  # ACMCertificateArn:
-  #   Description: "Enter the Certificate ARN. (ex: arn:aws:acm:<AWS_REGION>:<AWS_ACCOUNT_ID>:certificate/<ACMCertificateID>)"
-  #   Type: String
+  ACMCertificateArn:
+    Description: "Enter the Certificate ARN. (ex: arn:aws:acm:<AWS_REGION>:<AWS_ACCOUNT_ID>:certificate/<ACMCertificateID>)"
+    Type: String
   # ALB からのヘルスチェックに応答するパス
   HealthCheckPath:
     Description: "Enter the path respond to health checks from ALB."
@@ -86,12 +86,12 @@ Parameters:
     Type: String
     Default: 60
   # https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/application/create-https-listener.html
-  # ELBSecurityPolicy:
-  #   Description: "Select the ELB security policies."
-  #   Type: String
-  #   AllowedValues:
-  #     - ELBSecurityPolicy-TLS-1-2-Ext-2018-06
-  #     - ELBSecurityPolicy-TLS13-1-2-2021-06
+  ELBSecurityPolicy:
+    Description: "Select the ELB security policies."
+    Type: String
+    AllowedValues:
+      - ELBSecurityPolicy-TLS-1-2-Ext-2018-06
+      - ELBSecurityPolicy-TLS13-1-2-2021-06
 
 # -------------------------------------
 # Resources
@@ -100,21 +100,21 @@ Resources:
   # -------------------------------------
   # Target Groups
   # -------------------------------------
-  ALBTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    DependsOn: InternetALB
-    Properties:
-      Name: !Sub ${ProjectName}-${Environment}-tg
-      TargetType: ip
-      Protocol: HTTP
-      Port: 80
-      VpcId: !Ref VPCID
-      HealthCheckProtocol: HTTP
-      HealthCheckPath: !Ref HealthCheckPath
-      HealthyThresholdCount: 5
-      UnhealthyThresholdCount: 2
-      HealthCheckTimeoutSeconds: 5
-      HealthCheckIntervalSeconds: 30
+  # ALBTargetGroup:
+  #   Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  #   DependsOn: InternetALB
+  #   Properties:
+  #     Name: !Sub ${ProjectName}-${Environment}-tg
+  #     TargetType: ip
+  #     Protocol: HTTP
+  #     Port: 80
+  #     VpcId: !Ref VPCID
+  #     HealthCheckProtocol: HTTP
+  #     HealthCheckPath: !Ref HealthCheckPath
+  #     HealthyThresholdCount: 5
+  #     UnhealthyThresholdCount: 2
+  #     HealthCheckTimeoutSeconds: 5
+  #     HealthCheckIntervalSeconds: 30
   ALBTargetGroupBlue:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     DependsOn: InternetALB
@@ -174,27 +174,27 @@ Resources:
   # -------------------------------------
   # Listener
   # -------------------------------------
-  ALBListenerHTTP:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref ALBTargetGroup
-      LoadBalancerArn: !Ref InternetALB
-      Port: 80
-      Protocol: HTTP
-  # ALBListenerHTTPS:
+  # ALBListenerHTTP:
   #   Type: AWS::ElasticLoadBalancingV2::Listener
   #   Properties:
   #     DefaultActions:
   #       - Type: forward
-  #         TargetGroupArn: !Ref ALBTargetGroupBlue
+  #         TargetGroupArn: !Ref ALBTargetGroup
   #     LoadBalancerArn: !Ref InternetALB
-  #     Port: 443
-  #     Protocol: HTTPS
-  #     Certificates:
-  #       - CertificateArn: !Ref ACMCertificateArn
-  #     SslPolicy: !Ref ELBSecurityPolicy
+  #     Port: 80
+  #     Protocol: HTTP
+  ALBListenerHTTPS:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupBlue
+      LoadBalancerArn: !Ref InternetALB
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref ACMCertificateArn
+      SslPolicy: !Ref ELBSecurityPolicy
   ALBListenerHTTPTest:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
@@ -209,15 +209,15 @@ Resources:
   # -------------------------------------
   # Route 53
   # -------------------------------------
-  # ALBAliasRecord:
-  #   Type: AWS::Route53::RecordSet
-  #   Properties:
-  #     HostedZoneId: !Ref HostZoneID
-  #     Name: !Ref DomainName
-  #     Type: A
-  #     AliasTarget:
-  #       HostedZoneId: !GetAtt InternetALB.CanonicalHostedZoneID
-  #       DNSName: !GetAtt InternetALB.DNSName
+  ALBAliasRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostZoneID
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        HostedZoneId: !GetAtt InternetALB.CanonicalHostedZoneID
+        DNSName: !GetAtt InternetALB.DNSName
 
 # -------------------------------------
 # Output parameters
@@ -227,10 +227,10 @@ Outputs:
     Value: !Ref InternetALB
   InternetALBName:
     Value: !GetAtt InternetALB.LoadBalancerName
-  ALBTargetGroupArn:
-    Value: !Ref ALBTargetGroup
-  ALBTargetGroupName:
-    Value: !GetAtt ALBTargetGroup.TargetGroupName
+  # ALBTargetGroupArn:
+  #   Value: !Ref ALBTargetGroup
+  # ALBTargetGroupName:
+  #   Value: !GetAtt ALBTargetGroup.TargetGroupName
   ALBTargetGroupBlueArn:
     Value: !Ref ALBTargetGroupBlue
   ALBTargetGroupBlueName:

@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "CodeStar Factory Settings Stack"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          Default: "CodeStar Configuration"
+        Parameters:
+          - GitHubName
+          - ProviderType
+          - CICDPipelineTopicName
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  GitHubName:
+    Description: "GitHub account name will be set as the prefix of the environment variable name (default: shun198)"
+    Type: String
+    Default: shun198
+  ProviderType:
+    Type: String
+    Default: GitHub
+    AllowedValues:
+      - GitHub
+      - GitHubEnterpriseServer
+  CICDPipelineTopicName:
+    Type: String
+    Default: cicd-pipeline
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # GitHub 連携用
+  SourceConnection:
+    Type: AWS::CodeStarConnections::Connection
+    Properties:
+      ConnectionName: !Sub ${GitHubName}-connection
+      ProviderType: !Ref ProviderType
+  # CI/CD パイプライン通知用トピック
+  CICDPipelineTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Ref CICDPipelineTopicName
+      TopicName: !Ref CICDPipelineTopicName
+  # CI/CD パイプライン通知用トピックポリシー
+  CICDPipelineTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: CICDPipelineSNSPolicy
+            Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+                - codestar-notifications.amazonaws.com
+            Action:
+              - sns:Publish
+            Resource: !Ref CICDPipelineTopic
+            Condition:
+              StringEquals:
+                "AWS:SourceAccount": !Ref AWS::AccountId
+      Topics:
+        - !Ref CICDPipelineTopic
+
+# -------------------------------------
+# Output parameters
+# -------------------------------------
+Outputs:
+  SourceConnectionArn:
+    Value: !Ref SourceConnection
+  CICDPipelineTopicArn:
+    Value: !Ref CICDPipelineTopic
+  CICDPipelineTopicName:
+    Value: !GetAtt CICDPipelineTopic.TopicName
