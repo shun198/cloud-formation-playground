@@ -2,17 +2,6 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: "ALB Stack"
 
 # -------------------------------------
-# Mappings
-# -------------------------------------
-# Mappings:
-#   # 使用する可能性のある "国内リージョン" のみを列挙
-#   DomainsMap:
-#     Environment:
-#       dev: api.shun-practice.com
-#       stg: api.shun-practice.com
-#       prd: api.shun-practice.com
-
-# -------------------------------------
 # Metadata
 # -------------------------------------
 Metadata:
@@ -59,6 +48,10 @@ Parameters:
   # HostZoneID:
   #   Type: AWS::Route53::HostedZone::Id
   #   Description: "Select the Route 53 hosted zone ID"
+  # DomainName:
+  #   Description: "Enter the Route 53 domain name"
+  #   Default: api.shun-practice.com
+  #   Type: String
   VPCID:
     Description: "Select the VPC ID."
     Type: AWS::EC2::VPC::Id
@@ -92,6 +85,7 @@ Parameters:
     Description: "Enter the ALB idle timeout seconds. (default: 60)"
     Type: String
     Default: 60
+  # https://docs.aws.amazon.com/ja_jp/elasticloadbalancing/latest/application/create-https-listener.html
   # ELBSecurityPolicy:
   #   Description: "Select the ELB security policies."
   #   Type: String
@@ -219,7 +213,7 @@ Resources:
   #   Type: AWS::Route53::RecordSet
   #   Properties:
   #     HostedZoneId: !Ref HostZoneID
-  #     Name: !FindInMap [ DomainsMap, Environment, !Ref Environment ]
+  #     Name: !Ref DomainName
   #     Type: A
   #     AliasTarget:
   #       HostedZoneId: !GetAtt InternetALB.CanonicalHostedZoneID

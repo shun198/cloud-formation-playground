@@ -76,6 +76,7 @@ Parameters:
     Type: AWS::Route53::HostedZone::Id
   DomainName:
     Description: "Enter the Route 53 domain name"
+    Default: shun-practice.com
     Type: String
   # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset-aliastarget.html#cfn-route53-recordset-aliastarget-hostedzoneid
   CloudFrontHostZoneID:
