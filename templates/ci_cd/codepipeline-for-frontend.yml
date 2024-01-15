@@ -43,7 +43,10 @@ Parameters:
     AllowedValues: [dev, stg, prd]
     ConstraintDescription: "Environment must be select"
   FrontEndRepositoryName:
-    Description: "Enter the target GitHub frontend repository name (ex: shun198/cloud-formation-playground)"
+    Description: "Enter the target GitHub frontend repository name (ex: cloud-formation-playground)"
+    Type: String
+  GitHubAccountName:
+    Description: "Enter the GitHub owner name (ex: shun198))"
     Type: String
   SourceBranchName:
     Description: "Enter the source branch name in GitHub frontend repository (ex: main)"
@@ -272,12 +275,18 @@ Resources:
               ActionTypeId:
                 Category: Source
                 Owner: AWS
-                Provider: CodeStarSourceConnection
+                Provider: GitHub
                 Version: 1
+              # Configuration:
+              #   FullRepositoryId: !Ref FrontEndRepositoryName
+              #   ConnectionArn: !Ref CodeStarConnectionArn
+              #   BranchName: !Ref SourceBranchName
               Configuration:
-                FullRepositoryId: !Ref FrontEndRepositoryName
-                ConnectionArn: !Ref CodeStarConnectionArn
-                BranchName: !Ref SourceBranchName
+                Owner: !Ref GitHubAccountName
+                Repo: !Ref FrontEndRepositoryName
+                PollForSourceChanges: false
+                Branch: !Ref Branch
+                OAuthToken: !Ref GitHubOAuthToken
               OutputArtifacts:
                 - Name: SourceArtifact
               RunOrder: 1
