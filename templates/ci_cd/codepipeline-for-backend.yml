@@ -45,13 +45,6 @@ Metadata:
           - CodeStarConnectionArn
 
 # -------------------------------------
-# Conditions
-# -------------------------------------
-Conditions:
-  # CodePipeline ブランチ更新トリガー制御用
-  IsEnvPrd: !Equals [!Ref Environment, prd]
-
-# -------------------------------------
 # Input parameters
 # -------------------------------------
 Parameters:
@@ -461,10 +454,7 @@ Resources:
                 FullRepositoryId: !Ref BackEndRepositoryName
                 ConnectionArn: !Ref CodeStarConnectionArn
                 BranchName: !Ref SourceBranchName
-                DetectChanges: !If
-                  - IsEnvPrd
-                  - false
-                  - true
+                DetectChanges: true
               OutputArtifacts:
                 - Name: SourceArtifact
               RunOrder: 1

@@ -117,7 +117,6 @@ Resources:
       IpProtocol: tcp
       FromPort: 80
       ToPort: 80
-      # CidrIp: 0.0.0.0/0
       SourceSecurityGroupId: !Ref ALBSG
       Description: "from alb health check"
   FargateSGIngressHTTPS:
@@ -127,10 +126,9 @@ Resources:
       IpProtocol: tcp
       FromPort: 443
       ToPort: 443
-      # CidrIp: 0.0.0.0/0
       SourceSecurityGroupId: !Ref ALBSG
       Description: "from alb"
-  # Use only when Blue/Green Deployment
+  # For Blue/Green Deployment
   FargateSGIngressHTTPTest:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -138,7 +136,7 @@ Resources:
       IpProtocol: tcp
       FromPort: 8080
       ToPort: 8080
-      # SourceSecurityGroupId: !Ref ALBSG
+      SourceSecurityGroupId: !Ref ALBSG
       Description: "from alb (for blue/green deployment)"
   # For RDS (PostgreSQL)
   RDSForPostgreSQLSG:
