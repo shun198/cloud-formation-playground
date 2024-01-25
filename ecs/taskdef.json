@@ -3,7 +3,7 @@
     "containerDefinitions": [
         {
             "name": "web",
-            "image": "044392971793.dkr.ecr.ap-northeast-1.amazonaws.com/my-project/dev/back/nginx",
+            "image": "<NGINX_IMAGE_NAME>",
             "cpu": 0,
             "links": [],
             "portMappings": [
@@ -51,7 +51,7 @@
         },
         {
             "name": "app",
-            "image": "044392971793.dkr.ecr.ap-northeast-1.amazonaws.com/my-project/dev/back/django",
+            "image": "<DJANGO_IMAGE_NAME>",
             "cpu": 0,
             "links": [],
             "portMappings": [
