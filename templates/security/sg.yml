@@ -59,24 +59,24 @@ Resources:
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
-  # ALBSGIngressHTTP:
-  #   Type: AWS::EC2::SecurityGroupIngress
-  #   Properties:
-  #     GroupId: !Ref ALBSG
-  #     IpProtocol: tcp
-  #     FromPort: 80
-  #     ToPort: 80
-  #     CidrIp: 0.0.0.0/0
-  #     Description: "from my alb sg"
-  # ALBSGEgressHTTP:
-  #   Type: AWS::EC2::SecurityGroupEgress
-  #   Properties:
-  #     GroupId: !Ref ALBSG
-  #     IpProtocol: tcp
-  #     FromPort: 80
-  #     ToPort: 80
-  #     CidrIp: 0.0.0.0/0
-  #     Description: "from my alb sg"
+  ALBSGIngressHTTP:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref ALBSG
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: 0.0.0.0/0
+      Description: "from my alb sg"
+  ALBSGEgressHTTP:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref ALBSG
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      CidrIp: 0.0.0.0/0
+      Description: "from my alb sg"
   ALBSGIngressHTTPS:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
