@@ -14,23 +14,8 @@ SPECTACULAR_SETTINGS = {
 }
 
 INSTALLED_APPS += [
-    "debug_toolbar",
     "drf_spectacular",
 ]
-
-MIDDLEWARE += [
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
-]
-
-INTERNAL_IPS = [
-    "127.0.0.1",
-]
-
-
-DEBUG_TOOLBAR_CONFIG = {
-    # ツールバーを表示させる
-    "SHOW_TOOLBAR_CALLBACK": lambda request: True,
-}
 
 ROOT_URLCONF = "project.urls.local"
 

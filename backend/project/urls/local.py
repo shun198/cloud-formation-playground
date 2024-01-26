@@ -11,7 +11,6 @@ from project.settings.base import MEDIA_ROOT, MEDIA_URL
 from project.urls.base import urlpatterns
 
 urlpatterns += [
-    path("__debug__/", include("debug_toolbar.urls")),
     # Swagger
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
