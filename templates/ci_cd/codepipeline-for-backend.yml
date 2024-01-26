@@ -69,6 +69,9 @@ Parameters:
   SourceBranchName:
     Description: "Enter the source branch name in GitHub backend repository. (ex: develop or main)"
     Type: String
+    AllowedValues:
+      - develop
+      - main
   DjangoDockerfilePath:
     Description: "Enter the Django Dockerfile path in GitHub backend repository. (ex: containers/django/Dockerfile.prd)"
     Type: String

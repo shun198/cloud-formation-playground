@@ -70,6 +70,8 @@ MIDDLEWARE = [
     "application.utils.middleware.LoggingMiddleware",
 ]
 
+ROOT_URLCONF = "inquiry_pro.urls.base"
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
