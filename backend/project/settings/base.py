@@ -70,7 +70,7 @@ MIDDLEWARE = [
     "application.utils.middleware.LoggingMiddleware",
 ]
 
-ROOT_URLCONF = "inquiry_pro.urls.base"
+ROOT_URLCONF = "project.urls.base"
 
 TEMPLATES = [
     {
