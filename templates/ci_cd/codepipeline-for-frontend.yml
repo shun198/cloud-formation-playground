@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: "CodePipeline Stack For Frontend"
+Description: 'CodePipeline Stack For Frontend'
 
 # -------------------------------------
 # Metadata
@@ -8,21 +8,21 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: "Project Configuration"
+          default: 'Project Configuration'
         Parameters:
           - ProjectName
           - Environment
       - Label:
-          default: "GitHub Configuration"
+          default: 'GitHub Configuration'
         Parameters:
           - FrontEndRepositoryName
           - SourceBranchName
       - Label:
-          default: "Application Configuration"
+          default: 'Application Configuration'
         Parameters:
           - SSMParameterStoreForBackendServerURL
       - Label:
-          default: "CodePipeline Configuration"
+          default: 'CodePipeline Configuration'
         Parameters:
           - CodeDeployTargetBucketName
           - CodeStarConnectionArn
@@ -32,37 +32,31 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name (ex: my-project)"
+    Description: 'Enter the project name (ex: my-project)'
     Type: String
     MinLength: 1
-    ConstraintDescription: "ProjectName must be enter"
+    ConstraintDescription: 'ProjectName must be enter'
     Default: my-project
   Environment:
-    Description: "Select the environment"
+    Description: 'Select the environment'
     Type: String
     AllowedValues: [dev, stg, prd]
-    ConstraintDescription: "Environment must be select"
+    ConstraintDescription: 'Environment must be select'
   FrontEndRepositoryName:
-    Description: "Enter the target GitHub frontend repository name (ex: cloud-formation-playground)"
-    Type: String
-  GitHubAccountName:
-    Description: "Enter the GitHub owner name (ex: shun198))"
+    Description: 'Enter the target GitHub frontend repository name (ex: shun198/cloud-formation-playground)'
     Type: String
   SourceBranchName:
-    Description: "Enter the source branch name in GitHub frontend repository (ex: main)"
+    Description: 'Enter the source branch name in GitHub frontend repository (ex: main)'
     Type: String
   SSMParameterStoreForBackendServerURL:
-    Description: "Enter the parameter store name with backend server URL for API connection (ex: /my-project/back/dev/NEXT_PUBLIC_BACK_SRV_URL)"
+    Description: 'Enter the parameter store name with backend server URL for API connection (ex: /my-project/back/dev/NEXT_PUBLIC_BACK_SRV_URL)'
     Type: String
   CodeDeployTargetBucketName:
-    Description: "Enter the S3 bucket name for CodeDeploy deployment target (ex: my-project-dev-assets-with-origin-access-control-XXXXXXXX)"
+    Description: 'Enter the S3 bucket name for CodeDeploy deployment target (ex: my-project-dev-assets-with-origin-access-control-XXXXXXXX)'
     Type: String
   CodeStarConnectionArn:
-    Description: "Enter the CodeStar connection ARN. (ex: arn:aws:codestar-connections:<aws_region>:<aws_account_id>:connection/<connection_id>)"
+    Description: 'Enter the CodeStar connection ARN. (ex: arn:aws:codestar-connections:<aws_region>:<aws_account_id>:connection/<connection_id>)'
     Type: String
-  # CICDPipelineTopicArn:
-  #   Description: "Enter the CI/CD SNS Topic ARN (ex: arn:aws:sns:<aws_region>:<aws_account_id>:cicd-pipeline)"
-  #   Type: String
 
 # -------------------------------------
 # Resources
@@ -86,10 +80,14 @@ Resources:
             Resource:
               - !Sub
                 - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${CodeBuildProjectName}
-                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-code-build" }
+                - {
+                    CodeBuildProjectName: !Sub '${ProjectName}-${Environment}-front-code-build',
+                  }
               - !Sub
                 - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${CodeBuildProjectName}:*
-                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-code-build" }
+                - {
+                    CodeBuildProjectName: !Sub '${ProjectName}-${Environment}-front-code-build',
+                  }
           - Effect: Allow
             Action:
               - s3:PutObject
@@ -105,20 +103,21 @@ Resources:
               - codebuild:UpdateReport
               - codebuild:BatchPutTestCases
               - codebuild:BatchPutCodeCoverages
-            Resource:
-              !Sub
-                - arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/${CodeBuildProjectName}*
-                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-code-build" }
+            Resource: !Sub
+              - arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/${CodeBuildProjectName}*
+              - {
+                  CodeBuildProjectName: !Sub '${ProjectName}-${Environment}-front-code-build',
+                }
           - Effect: Allow
             Action:
               - codebuild:StartBuild
               - codebuild:StopBuild
               - codebuild:RetryBuild
-            Resource:
-              !Sub
-                - arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CodeBuildProjectName}
-                - { CodeBuildProjectName: !Sub "${ProjectName}-${Environment}-front-code-build" }
-
+            Resource: !Sub
+              - arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:project/${CodeBuildProjectName}
+              - {
+                  CodeBuildProjectName: !Sub '${ProjectName}-${Environment}-front-code-build',
+                }
 
   CodeBuildServiceRole:
     Type: AWS::IAM::Role
@@ -156,26 +155,26 @@ Resources:
               - codedeploy:GetDeployment
               - codedeploy:GetDeploymentConfig
               - codedeploy:RegisterApplicationRevision
-            Resource: "*"
+            Resource: '*'
           - Effect: Allow
             Action:
               - codestar-connections:UseConnection
-            Resource: "*"
+            Resource: '*'
           - Effect: Allow
             Action:
               - codebuild:BatchGetBuilds
               - codebuild:StartBuild
               - codebuild:BatchGetBuildBatches
               - codebuild:StartBuildBatch
-            Resource: "*"
+            Resource: '*'
           - Effect: Allow
             Action:
               - cloudformation:ValidateTemplate
-            Resource: "*"
+            Resource: '*'
           - Effect: Allow
             Action:
               - sns:Publish
-            Resource: "*"
+            Resource: '*'
 
   CodePipelineServiceRole:
     Type: AWS::IAM::Role
@@ -275,18 +274,12 @@ Resources:
               ActionTypeId:
                 Category: Source
                 Owner: AWS
-                Provider: GitHub
+                Provider: CodeStarSourceConnection
                 Version: 1
-              # Configuration:
-              #   FullRepositoryId: !Ref FrontEndRepositoryName
-              #   ConnectionArn: !Ref CodeStarConnectionArn
-              #   BranchName: !Ref SourceBranchName
               Configuration:
-                Owner: !Ref GitHubAccountName
-                Repo: !Ref FrontEndRepositoryName
-                PollForSourceChanges: false
-                Branch: !Ref Branch
-                OAuthToken: !Ref GitHubOAuthToken
+                FullRepositoryId: !Ref FrontEndRepositoryName
+                ConnectionArn: !Ref CodeStarConnectionArn
+                BranchName: !Ref SourceBranchName
               OutputArtifacts:
                 - Name: SourceArtifact
               RunOrder: 1
@@ -320,22 +313,6 @@ Resources:
               InputArtifacts:
                 - Name: BuildArtifact
               Region: !Ref AWS::Region
-
-  # -------------------------------------
-  # CodePipeline Notification
-  # -------------------------------------
-  # CICDNotificationRule:
-  #   Type: AWS::CodeStarNotifications::NotificationRule
-  #   Properties:
-  #     Name: !Ref CodePipeline
-  #     Resource: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}
-  #     DetailType: FULL
-  #     EventTypeIds:
-  #       - codepipeline-pipeline-pipeline-execution-failed
-  #       - codepipeline-pipeline-pipeline-execution-succeeded
-  #     Targets:
-  #       - TargetType: SNS
-  #         TargetAddress: !Ref CICDPipelineTopicArn
 
 # -------------------------------------
 # Output
