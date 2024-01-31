@@ -48,6 +48,9 @@ Parameters:
   SourceBranchName:
     Description: 'Enter the source branch name in GitHub frontend repository (ex: main)'
     Type: String
+    AllowedValues:
+      - develop
+      - main
   SSMParameterStoreForBackendServerURL:
     Description: 'Enter the parameter store name with backend server URL for API connection (ex: /my-project/back/dev/NEXT_PUBLIC_BACK_SRV_URL)'
     Type: String
