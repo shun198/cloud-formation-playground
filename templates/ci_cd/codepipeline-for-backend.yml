@@ -76,21 +76,33 @@ Parameters:
   DjangoDockerfilePath:
     Description: "Enter the Django Dockerfile path in GitHub backend repository. (ex: containers/django/Dockerfile.prd)"
     Type: String
+    AllowedValues:
+      - containers/django/Dockerfile.dev
+      - containers/django/Dockerfile.stg
+      - containers/django/Dockerfile.prd
   NginxDockerfilePath:
     Description: "Enter the Nginx Dockerfile path in GitHub backend repository. (ex: containers/nginx/Dockerfile.prd)"
     Type: String
+    AllowedValues:
+      - containers/nginx/Dockerfile.dev
+      - containers/nginx/Dockerfile.stg
+      - containers/nginx/Dockerfile.prd
   TaskDefinitionTemplatePath:
     Description: "Enter the ECS Task Definition template path in GitHub backend repository. (ex: ecs/taskdef.json)"
     Type: String
+    Default: ecs/taskdef.json
   AppSpecTemplatePath:
     Description: "Enter the Codedeploy Appspec template path in GitHub backend repository. (ex: codedeploy/appspec.yml)"
     Type: String
+    Default: codedeploy/appspec.yml
   ECRBackEndDjangoRepositoryName:
     Description: "Enter the ECR backend application repository name. (ex: my-project/dev/back/django)"
     Type: String
+    Default: my-project/dev/back/django
   ECRBackEndNginxRepositoryName:
     Description: "Enter the ECR backend webserver repository name. (ex: my-project/dev/back/nginx)"
     Type: String
+    Default: my-project/dev/back/nginx
   CodeDeployApplicationName:
     Description: "Enter the CodeDeploy application name. (ex: my-project-dev-cdapp)"
     Type: String
