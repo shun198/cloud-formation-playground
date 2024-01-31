@@ -1,0 +1,89 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "SNS Topic Configuration"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    # パラメータの並び順を記載
+    ParameterGroups:
+      # - Label:
+      #     default: "CodeStar Configuration"
+      - Label:
+          default: "SNS Topic Configuration"
+        Parameters:
+          # - GitHubRepoName
+          # - ProviderType
+          - CICDPipelineTopicName
+          - KMSKeyAliasName
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  # GitHubRepoName:
+  #   Description: "Enter the GitHub organization's name will be set as the prefix of the environment variable name. (default: shun198)"
+  #   Type: String
+  #   Default: shun198
+  # ProviderType:
+  #   Type: String
+  #   Default: GitHub
+  #   AllowedValues:
+  #     - GitHub
+  CICDPipelineTopicName:
+    Type: String
+    Default: cicd-pipeline
+  KMSKeyAliasName:
+    Description: "Enter the alias name for SNS KMS key."
+    Type: String
+    Default: alias/cmk/sns
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # SourceConnection:
+  #   Type: AWS::CodeStarConnections::Connection
+  #   Properties:
+  #     ConnectionName: !Sub ${GitHubRepoName}-connection
+  #     ProviderType: !Ref ProviderType
+  # CI/CD パイプライン通知用トピック
+  CICDPipelineTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Ref CICDPipelineTopicName
+      TopicName: !Ref CICDPipelineTopicName
+      KmsMasterKeyId: !Ref KMSKeyAliasName
+  # CI/CD パイプライン通知用トピックポリシー
+  CICDPipelineTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: CICDPipelineSNSPolicy
+            Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+                - codestar-notifications.amazonaws.com
+            Action:
+              - sns:Publish
+            Resource: !Ref CICDPipelineTopic
+            Condition:
+              StringEquals:
+                "AWS:SourceAccount": !Ref AWS::AccountId
+      Topics:
+        - !Ref CICDPipelineTopic
+
+# -------------------------------------
+# Output parameters
+# -------------------------------------
+Outputs:
+  # SourceConnectionArn:
+  #   Value: !Ref SourceConnection
+  CICDPipelineTopicArn:
+    Value: !Ref CICDPipelineTopic
+  CICDPipelineTopicName:
+    Value: !GetAtt CICDPipelineTopic.TopicName

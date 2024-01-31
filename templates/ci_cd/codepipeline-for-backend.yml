@@ -43,7 +43,7 @@ Metadata:
           default: "CodePipeline Configuration"
         Parameters:
           - CodeStarConnectionArn
-          # - CICDPipelineTopicArn
+          - CICDPipelineTopicArn
 
 # -------------------------------------
 # Input parameters
@@ -140,9 +140,9 @@ Parameters:
     Description: "Enter the CodeStar connection ARN. (ex: arn:aws:codestar-connections:<aws_region>:<aws_account_id>:connection/<connection_id>)"
     Type: String
   # # CodePipeline 用 SNS トピックが既に作成されていることが前提
-  # CICDPipelineTopicArn:
-  #   Type: String
-  #   Description: "Enter the ARN of SNS topic for CodePipeline (CI/CD)."
+  CICDPipelineTopicArn:
+    Type: String
+    Description: "Enter the ARN of SNS topic for CodePipeline (CI/CD)."
 
 # -------------------------------------
 # Resources
@@ -525,18 +525,18 @@ Resources:
   # -------------------------------------
   # CodePipeline Notification
   # -------------------------------------
-  # CICDNotificationRule:
-  #   Type: AWS::CodeStarNotifications::NotificationRule
-  #   Properties:
-  #     Name: !Sub ${ProjectName}-${Environment}-back-pipeline
-  #     Resource: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${ProjectName}-${Environment}-back-pipeline
-  #     DetailType: FULL
-  #     EventTypeIds:
-  #       - codepipeline-pipeline-pipeline-execution-failed
-  #       - codepipeline-pipeline-pipeline-execution-succeeded
-  #     Targets:
-  #       - TargetType: SNS
-  #         TargetAddress: !Ref CICDPipelineTopicArn
+  CICDNotificationRule:
+    Type: AWS::CodeStarNotifications::NotificationRule
+    Properties:
+      Name: !Sub ${ProjectName}-${Environment}-back-pipeline
+      Resource: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${ProjectName}-${Environment}-back-pipeline
+      DetailType: FULL
+      EventTypeIds:
+        - codepipeline-pipeline-pipeline-execution-failed
+        - codepipeline-pipeline-pipeline-execution-succeeded
+      Targets:
+        - TargetType: SNS
+          TargetAddress: !Ref CICDPipelineTopicArn
 
 # -------------------------------------
 # Output parameters
