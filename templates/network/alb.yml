@@ -173,7 +173,7 @@ Resources:
     Properties:
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref ALBTargetGroupGreen
+          TargetGroupArn: !Ref ALBTargetGroupBlue
       LoadBalancerArn: !Ref InternetALB
       Port: 8080
       Protocol: HTTP

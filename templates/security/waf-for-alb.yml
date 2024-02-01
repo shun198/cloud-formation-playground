@@ -1,0 +1,361 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "WAFv2 For ALB"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "WAF Configuration"
+        Parameters:
+          - AllowIPAddresses
+          - WebACLAssociationArn
+          - TargetALBName
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter"
+    Default: my-project
+  Environment:
+    Description: "Select the environment"
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment must be select"
+  AllowIPAddresses:
+    Description: "Enter the IP address for IP whitelist separated by commas (ex: 0.0.0.0/32,1.1.1.1/32,2.2.2.2/32)"
+    Type: CommaDelimitedList
+  WebACLAssociationArn:
+    Description: "Enter the Target ARN for WAFv2 Web ACL Association (ex: arn:aws:elasticloadbalancing:ap-northeast-1:12345678)"
+    Type: String
+  TargetALBName:
+    Description: "Enter the target ALB Name for WAFv2 Web ACL Association"
+    Type: String
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # WAFv2 S3 Bucket
+  # -------------------------------------
+  WAFLogsS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub aws-waf-logs-for-${TargetALBName}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToGlacierAfter365Days
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: 365
+                StorageClass: GLACIER
+          - Id: ExpireAfter5Years
+            Status: Enabled
+            ExpirationInDays: 1825
+
+  # -------------------------------------
+  # WAFv2 ACL
+  # -------------------------------------
+  WebACL:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Sub ${ProjectName}-${Environment}-waf
+      DefaultAction:
+        Allow: {}
+      Scope: REGIONAL
+      VisibilityConfig:
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub ${ProjectName}-${Environment}-waf
+        SampledRequestsEnabled: true
+      Rules:
+        - Name: IPAddressWhitelistRule
+          Priority: 10
+          Statement:
+            RateBasedStatement:
+              AggregateKeyType: IP
+              Limit: 100
+              ScopeDownStatement:
+                NotStatement:
+                  Statement:
+                    IPSetReferenceStatement:
+                      Arn: !GetAtt IPWhitelist.Arn
+          Action:
+            Count: {}
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: IPAddressWhitelistRule
+            SampledRequestsEnabled: true
+        - Name: AWS-AWSManagedRulesAmazonIpReputationList
+          Priority: 20
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesAmazonIpReputationList
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: AWSManagedRulesAmazonIpReputationList
+            SampledRequestsEnabled: true
+        - Name: AWS-AWSManagedRulesAnonymousIpList
+          Priority: 30
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesAnonymousIpList
+              ExcludedRules:
+                - Name: HostingProviderIPList
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: AWSManagedRulesAnonymousIpList
+            SampledRequestsEnabled: true
+        - Name: AWS-AWSManagedRulesCommonRuleSet
+          Priority: 40
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+              ExcludedRules:
+                - Name: SizeRestrictions_BODY
+                - Name: CrossSiteScripting_BODY
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: AWSManagedRulesCommonRuleSet
+            SampledRequestsEnabled: true
+        - Name: AWS-AWSManagedRulesKnownBadInputsRuleSet
+          Priority: 50
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: AWSManagedRulesKnownBadInputsRuleSet
+            SampledRequestsEnabled: true
+        - Name: AWS-AWSManagedRulesLinuxRuleSet
+          Priority: 6
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesLinuxRuleSet
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: AWSManagedRulesLinuxRuleSet
+            SampledRequestsEnabled: true
+        - Name: AWS-AWSManagedRulesUnixRuleSet
+          Priority: 60
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesUnixRuleSet
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: AWSManagedRulesUnixRuleSet
+            SampledRequestsEnabled: true
+        - Name: AWS-AWSManagedRulesSQLiRuleSet
+          Priority: 70
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesSQLiRuleSet
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            CloudWatchMetricsEnabled: true
+            MetricName: AWSManagedRulesSQLiRuleSet
+            SampledRequestsEnabled: true
+
+  # -------------------------------------
+  # White IP Address
+  # -------------------------------------
+  IPWhitelist:
+    Type: AWS::WAFv2::IPSet
+    Properties:
+      Name: Custom-IPAddress-Whitelist-Prd
+      Scope: REGIONAL
+      IPAddressVersion: IPV4
+      Addresses: !Ref AllowIPAddresses
+
+  # -------------------------------------
+  # WebACLAssociation
+  # -------------------------------------
+  WebACLAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !Ref WebACLAssociationArn
+      WebACLArn: !GetAtt WebACL.Arn
+
+  # -------------------------------------
+  # CloudWatch Logs Log Group (WAFv2)
+  # -------------------------------------
+  WAFLogsDeliveryStreamLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub aws-waf-logs-for-${TargetALBName}
+      RetentionInDays: 90
+      Tags:
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  WAFLogsSubscriptionFilter:
+    Type: AWS::Logs::SubscriptionFilter
+    Properties:
+      RoleArn: !GetAtt CloudWatchLogsRole.Arn
+      LogGroupName: !Ref WAFLogsDeliveryStreamLogGroup
+      FilterPattern: ""
+      DestinationArn: !GetAtt WAFv2ForALBDeliveryStream.Arn
+
+  # -------------------------------------
+  # WAFv2 Log Config
+  # -------------------------------------
+  WAFLogsConfig:
+    DependsOn: WebACLAssociation
+    Type: AWS::WAFv2::LoggingConfiguration
+    Properties:
+      LogDestinationConfigs:
+        - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-for-${TargetALBName}
+      ResourceArn: !GetAtt WebACL.Arn
+
+  # -------------------------------------
+  # Kinesis Data Firehose Delivery Stream
+  # -------------------------------------
+  WAFv2ForALBDeliveryStream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamName: !Sub kinesis-s3-for-aws-waf-logs-${TargetALBName}
+      DeliveryStreamEncryptionConfigurationInput:
+        KeyType: AWS_OWNED_CMK
+      ExtendedS3DestinationConfiguration:
+        RoleARN: !GetAtt KinesisDataFirehoseRole.Arn
+        BucketARN: !GetAtt WAFLogsS3Bucket.Arn
+        BufferingHints:
+          IntervalInSeconds: 300
+          SizeInMBs: 5
+        CompressionFormat: GZIP
+        Prefix: ""
+        ProcessingConfiguration:
+          Enabled: false
+        CloudWatchLoggingOptions:
+          Enabled: true
+          LogGroupName: /aws/kinesisfirehose/s3-delivery-stream
+          LogStreamName: !Sub s3-delivery-waf-${TargetALBName}
+      Tags:
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # -------------------------------------
+  # IAM Role
+  # -------------------------------------
+  CloudWatchLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub CWLogsRoleForKinesisFirehose-aws-waf-${TargetALBName}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /service-role/
+  CloudWatchLogsRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub CWLogsAccessForKinesisFirehose-aws-waf-${TargetALBName}
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - firehose:*
+            Resource:
+              - !Sub arn:aws:firehose:${AWS::Region}:${AWS::AccountId}:*
+          - Effect: Allow
+            Action:
+              - iam:PassRole
+            Resource:
+              - !GetAtt CloudWatchLogsRole.Arn
+      Roles:
+        - !Ref CloudWatchLogsRole
+  # For Kinesis Data Firehose
+  KinesisDataFirehoseRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub KinesisFirehoseRoleForS3-aws-waf-${TargetALBName}
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - firehose.amazonaws.com
+            Action:
+              - sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref AWS::AccountId
+      Path: /service-role/
+      Policies:
+        - PolicyName: !Sub KinesisFirehoseAccessForS3-aws-waf-${TargetALBName}
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:AbortMultipartUpload
+                  - s3:PutObject
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:ListBucketMultipartUploads
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:aws:s3:::aws-waf-logs-for-${TargetALBName}
+                  - !Sub arn:aws:s3:::aws-waf-logs-for-${TargetALBName}/*
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-for-${TargetALBName}:log-stream:*
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  WAFLogsS3BucketArn:
+    Value: !GetAtt WAFLogsS3Bucket.Arn
+  WebACLArn:
+    Value: !GetAtt WebACL.Arn

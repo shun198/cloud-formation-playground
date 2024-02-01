@@ -7,7 +7,6 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
-
 from project.settings.base import MEDIA_ROOT, MEDIA_URL
 from project.urls.base import urlpatterns
 

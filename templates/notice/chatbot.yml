@@ -27,8 +27,8 @@ Metadata:
 Parameters:
   ChatbotRoleName:
     Type: String
-    Description: "Enter the Chatbot Role name (default: AWSChatbotRole)"
-    Default: AWSChatbotRole
+    Description: "Enter the Chatbot Role name (default: AWSChatbotRole-my-project-dev)"
+    Default: AWSChatbotRole-my-project-dev
   SlackWorkspaceID:
     Type: String
   # CI/CD 関連通知先の Slack Channel ID

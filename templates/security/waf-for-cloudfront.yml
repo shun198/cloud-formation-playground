@@ -1,0 +1,259 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "WAFv2 For CloudFront"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "WAF Configuration"
+        Parameters:
+          - AllowIPAddresses
+          - CloudFrontDistributionID
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter"
+    Default: my-project
+  Environment:
+    Description: "Select the environment"
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment must be select"
+  AllowIPAddresses:
+    Description: "Enter the IP address for IP whitelist separated by commas (ex: 0.0.0.0/32,1.1.1.1/32,2.2.2.2/32)"
+    Type: String
+  CloudFrontDistributionID:
+    Type: String
+    Description: "Enter the CloudFront DistributionID for configuring WAFv2"
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # WAFv2 S3 Bucket
+  # -------------------------------------
+  WAFLogsS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub aws-waf-logs-for-cloudfront-${ProjectName}-${Environment}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToGlacierAfter365Days
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: 365
+                StorageClass: GLACIER
+          - Id: ExpireAfter5Years
+            Status: Enabled
+            ExpirationInDays: 1825
+
+  # -------------------------------------
+  # WAFv2 ACL
+  # -------------------------------------
+  WebACL:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Sub ${ProjectName}-${Environment}-waf
+      Scope: CLOUDFRONT
+      DefaultAction:
+        Block: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub ${ProjectName}-${Environment}-waf
+      Rules:
+        -
+          Name: IPAddressWhitelistRule
+          Priority: 0
+          Action:
+            Allow: {}
+          Statement:
+            IPSetReferenceStatement:
+              Arn: !GetAtt IPAddressWhitelistSet.Arn
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: IPAddressWhitelistRule
+  # -------------------------------------
+  # White IP Address
+  # -------------------------------------
+  IPAddressWhitelistSet:
+    Type: AWS::WAFv2::IPSet
+    Properties:
+      Name: IPAddressWhitelist
+      Description: "This List of IP addresses accessible to the application"
+      Scope: CLOUDFRONT
+      IPAddressVersion: IPV4
+      Addresses: !Ref AllowIPAddresses
+
+  # -------------------------------------
+  # CloudWatch Logs Log Group (WAFv2)
+  # -------------------------------------
+  WAFLogsDeliveryStreamLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub aws-waf-logs-for-cf-${CloudFrontDistributionID}
+      RetentionInDays: 90
+      Tags:
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # -------------------------------------
+  # WAFv2 Log Subscription
+  # -------------------------------------
+  WAFLogsSubscriptionFilter:
+    DependsOn: CloudWatchLogsRolePolicy
+    Type: AWS::Logs::SubscriptionFilter
+    Properties:
+      RoleArn: !GetAtt CloudWatchLogsRole.Arn
+      LogGroupName: !Ref WAFLogsDeliveryStreamLogGroup
+      FilterPattern: ""
+      DestinationArn: !GetAtt WAFv2ForCFDeliveryStream.Arn
+
+  # -------------------------------------
+  # WAFv2 Log Config
+  # -------------------------------------
+  WAFLogsConfig:
+    Type: AWS::WAFv2::LoggingConfiguration
+    Properties:
+      LogDestinationConfigs:
+        - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-for-cf-${CloudFrontDistributionID}
+      ResourceArn: !GetAtt WebACL.Arn
+
+  # -------------------------------------
+  # Kinesis Data Firehose Delivery Stream
+  # -------------------------------------
+  WAFv2ForCFDeliveryStream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamName: !Sub kinesis-s3-for-aws-waf-logs-cf-${CloudFrontDistributionID}
+      DeliveryStreamEncryptionConfigurationInput:
+        KeyType: AWS_OWNED_CMK
+      ExtendedS3DestinationConfiguration:
+        RoleARN: !GetAtt KinesisDataFirehoseRole.Arn
+        BucketARN: !GetAtt WAFLogsS3Bucket.Arn
+        BufferingHints:
+          IntervalInSeconds: 300
+          SizeInMBs: 5
+        CompressionFormat: GZIP
+        Prefix: ""
+        ProcessingConfiguration:
+          Enabled: false
+        CloudWatchLoggingOptions:
+          Enabled: true
+          LogGroupName: /aws/kinesisfirehose/s3-delivery-stream
+          LogStreamName: s3-delivery-waf-cf-${CloudFrontDistributionID}
+      Tags:
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # -------------------------------------
+  # IAM Role
+  # -------------------------------------
+  # For CloudWatch Logs
+  CloudWatchLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub CWLogsRoleForKinesisFirehose-aws-waf-cf-${CloudFrontDistributionID}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub logs.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /service-role/
+  CloudWatchLogsRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub CWLogsAccessForKinesisFirehose-aws-waf-cf-${CloudFrontDistributionID}
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - firehose:PutRecord
+              - firehose:PutRecordBatch
+            Resource:
+              - !GetAtt WAFv2ForCFDeliveryStream.Arn
+          - Effect: Allow
+            Action:
+              - iam:PassRole
+            Resource:
+              - !GetAtt CloudWatchLogsRole.Arn
+      Roles:
+        - !Ref CloudWatchLogsRole
+  # For Kinesis Data Firehose
+  KinesisDataFirehoseRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub KinesisFirehoseRoleForS3-aws-waf-cf-${CloudFrontDistributionID}
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - firehose.amazonaws.com
+            Action:
+              - sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref AWS::AccountId
+      Path: /service-role/
+      Policies:
+        - PolicyName: !Sub KinesisFirehoseAccessForS3-aws-waf-cf-${CloudFrontDistributionID}
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:AbortMultipartUpload
+                  - s3:PutObject
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:ListBucketMultipartUploads
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:aws:s3:::aws-waf-logs-for-cloudfront-${ProjectName}-${Environment}
+                  - !Sub arn:aws:s3:::aws-waf-logs-for-cloudfront-${ProjectName}-${Environment}/*
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-for-cf-${CloudFrontDistributionID}:log-stream:*
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  CloudFrontWAF:
+    Value: !GetAtt WebACL.Arn
+  WAFLogsS3BucketArn:
+    Value: !GetAtt WAFLogsS3Bucket.Arn

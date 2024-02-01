@@ -118,8 +118,7 @@ function CustomerList() {
           })}
         </Table>
       </div>
-      <div>
-      </div>
+      <div></div>
     </div>
   );
 }
