@@ -157,7 +157,25 @@ Resources:
       ToPort: 5432
       SourceSecurityGroupId: !GetAtt FargateSG.GroupId
       Description: "from fargate"
-
+  LambdaSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${ProjectName}-${Environment}-lambda-for-internal-alb-sg
+      GroupDescription: "Security Group For Lambda"
+      VpcId: !Ref VPCID
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${Environment}-lambda-for-internal-alb-sg
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  LambdaSGEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref LambdaSG
+      IpProtocol: -1
+      CidrIp: 0.0.0.0/0
 # -------------------------------------
 # Output parameters
 # -------------------------------------
@@ -171,3 +189,6 @@ Outputs:
   RDSForPostgreSQLSG:
     Description: "Security Group For RDS (PostgreSQL)"
     Value: !Ref RDSForPostgreSQLSG
+  LambdaSG:
+    Description: "Security Group For Lambda"
+    Value: !Ref LambdaSG
