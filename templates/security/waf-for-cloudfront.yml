@@ -38,8 +38,7 @@ Parameters:
     ConstraintDescription: "Environment must be select"
   AllowIPAddresses:
     Description: "Enter the IP address for IP whitelist separated by commas (ex: 0.0.0.0/32,1.1.1.1/32,2.2.2.2/32)"
-    Type: CommaDelimitedList
-    Default: 54.243.31.192/26,54.244.52.192/26,54.245.168.0/26,54.248.220.0/26,54.250.253.192/26,54.251.31.128/26,54.255.254.192/26,15.177.0.0/18
+    Type: String
   CloudFrontDistributionID:
     Type: String
     Description: "Enter the CloudFront DistributionID for configuring WAFv2"

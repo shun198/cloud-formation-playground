@@ -248,7 +248,7 @@ Resources:
     DependsOn: WebACLAssociation
     Type: AWS::WAFv2::LoggingConfiguration
     Properties:
-      LogDestinationConfigs:z
+      LogDestinationConfigs:
         - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-for-${TargetALBName}
       ResourceArn: !GetAtt WebACL.Arn
 

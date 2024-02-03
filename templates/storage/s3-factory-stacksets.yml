@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "S3 Bucket Factory Settings Stack"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    # パラメータの並び順
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+
+# -------------------------------------
+# Input parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name. (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter."
+    Default: my-project
+  Environment:
+    Description: "Select the environment."
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment must be select."
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # S3
+  # -------------------------------------
+  # For CloudFormation Templates
+  CloudFormationTemplatesBucket:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      BucketName: !Sub cf-templates-${ProjectName}-${Environment}-${AWS::Region}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpiresAfter365DaysFor4thOlderVersion
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NewerNoncurrentVersions: 3
+              NoncurrentDays: 365
+
+# -------------------------------------
+# Output Parameters
+# -------------------------------------
+Outputs:
+  CloudFormationTemplatesBucketName:
+    Value: !Ref CloudFormationTemplatesBucket
+  CloudFormationTemplatesBucketArn:
+    Value: !GetAtt CloudFormationTemplatesBucket.Arn
+
