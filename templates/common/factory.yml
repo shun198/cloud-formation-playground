@@ -1,0 +1,172 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Template for AWS account factory settings"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "CloudFormation Configuration"
+        Parameters:
+          - IAMTemplateURL
+          - CodeStarTemplateURL
+          - PyPlateLambdaTemplateURL
+      - Label:
+          default: "IAM Configuration"
+        Parameters:
+          - MasterAccountId
+      - Label:
+          default: "CodeStar Configuration"
+        Parameters:
+          - GitHubRepoName
+          - ProviderType
+          - CICDPipelineTopicName
+          - KMSKeyAliasName
+      - Label:
+          default: "Lambda Configuration (For PyPlate)"
+        Parameters:
+          - LambdaArchiveBucketName
+          - LambdaArchiveBucketObjectKey
+          - LambdaHandler
+          - LambdaMemorySize
+          - LambdaTimeout
+          - LambdaRuntime
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  # -------------------------------------
+  # Project
+  # -------------------------------------
+  ProjectName:
+    Description: "Enter the project name. (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter."
+    Default: my-project
+  Environment:
+    Description: "Select the environment."
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment must be select."
+  # -------------------------------------
+  # CloudFormation
+  # -------------------------------------
+  IAMTemplateURL:
+    Description: "Enter the IAM template object URL in S3 bucket."
+    Type: String
+  CodeStarTemplateURL:
+    Description: "Enter the CodeStar template object URL in S3 bucket."
+    Type: String
+  PyPlateLambdaTemplateURL:
+    Description: "Enter the PyPlate Lambda template object URL in S3 bucket."
+    Type: String
+  # -------------------------------------
+  # IAM
+  # -------------------------------------
+  MasterAccountId:
+    Type: String
+    Description: "Enter the AWS Account ID of the primary account. (the account from which AWS Systems Manager Automation will be initiated)"
+    MaxLength: 12
+    MinLength: 12
+  # -------------------------------------
+  # CodeStar
+  # -------------------------------------
+  GitHubRepoName:
+    Description: "Enter the GitHub repository name will be set as the prefix of the environment variable name. (default: shun198)"
+    Type: String
+    Default: shun198
+  ProviderType:
+    Type: String
+    Default: GitHub
+    AllowedValues:
+      - GitHub
+      - GitHubEnterpriseServer
+  CICDPipelineTopicName:
+    Type: String
+    Default: ai-cicd-pipeline
+  KMSKeyAliasName:
+    Description: "Enter the alias name for SNS KMS key."
+    Type: String
+    Default: alias/cmk/sns
+  # -------------------------------------
+  # Lambda (For PyPlate)
+  # -------------------------------------
+  LambdaArchiveBucketName:
+    Description: "Enter the S3 bucket name for Lambda zip archive."
+    Type: String
+  LambdaArchiveBucketObjectKey:
+    Description: "Enter the S3 bucket object key for Lambda zip archive."
+    Type: String
+  LambdaHandler:
+    Description: "Enter the Lambda function handler. (default: lambda_function.lambda_handler)"
+    Type: String
+    Default: lambda_function.lambda_handler
+  LambdaMemorySize:
+    Description: "Enter the Lambda function memory size. (MiB) (default: 128)"
+    Type: Number
+    Default: 128
+    MinValue: 128
+    MaxValue: 10240
+  LambdaTimeout:
+    Description: "Enter the Lambda function timeout second. (default: 30)"
+    Type: Number
+    Default: 30
+    MinValue: 1
+    MaxValue: 900
+  LambdaRuntime:
+    Description: "Enter the Lambda function runtime."
+    Type: String
+    AllowedValues:
+      - python3.10
+    Default: python3.10
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  IAMStack:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref IAMTemplateURL
+      Parameters:
+        MasterAccountId: !Ref MasterAccountId
+  CodeStarStack:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref CodeStarTemplateURL
+      Parameters:
+        GitHubRepoName: !Ref GitHubRepoName
+        ProviderType: !Ref ProviderType
+        CICDPipelineTopicName: !Ref CICDPipelineTopicName
+        KMSKeyAliasName: !Ref KMSKeyAliasName
+  PyPlateLambdaStack:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref PyPlateLambdaTemplateURL
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        LambdaArchiveBucketName: !Ref LambdaArchiveBucketName
+        LambdaArchiveBucketObjectKey: !Ref LambdaArchiveBucketObjectKey
+        LambdaHandler: !Ref LambdaHandler
+        LambdaMemorySize: !Ref LambdaMemorySize
+        LambdaTimeout: !Ref LambdaTimeout
+        LambdaRuntime: !Ref LambdaRuntime
