@@ -60,22 +60,6 @@ services:
     depends_on:
       - app
 
-  # volta検証のためコメントアウト
-  # front:
-  #   container_name: front
-  #   build:
-  #     context: .
-  #     dockerfile: containers/front/Dockerfile
-  #   volumes:
-  #     - ./frontend:/code
-  #     - node_modules_volume:/frontend/node_modules
-  #   command: sh -c "npm run dev"
-  #   ports:
-  #     - '3000:3000'
-  #   environment:
-  #     - CHOKIDAR_USEPOLLING=true
-  #     - NEXT_PUBLIC_RESTAPI_URL=http://localhost/back
-
   localstack:
     image: localstack/localstack
     container_name: localstack
@@ -99,6 +83,15 @@ services:
       API_URL: openapi.yml
     ports:
       - 9000:8080
+
+  locust:
+    image: locustio/locust
+    container_name: locust
+    volumes:
+      - ./backend/application/locustfile.py:/mnt/locustfile.py
+    command: -f /mnt/locustfile.py --host=http://app:8000
+    ports:
+      - "8089:8089"
 
 volumes:
   db_data:

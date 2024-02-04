@@ -5,4 +5,4 @@ class Command(BaseCommand):
     help = "Seeds the database with initial data"
     
     def handle(self, *args, **options):
-        pass
+        print("add data")
