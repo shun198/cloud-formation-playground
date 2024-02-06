@@ -281,13 +281,6 @@ Resources:
     Properties:
       SubnetId: !Ref ELBPublicSubnet2
       RouteTableId: !Ref PublicRouteTable
-  ECSPublicRoute:
-    Type: AWS::EC2::Route
-    DependsOn: AttachInternetGateway
-    Properties:
-      RouteTableId: !Ref PublicRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
   ECSPublicSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:

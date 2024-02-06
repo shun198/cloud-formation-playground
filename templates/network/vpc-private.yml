@@ -25,6 +25,8 @@ Metadata:
           - RDSPrivateSubnet2CIDR
           - LambdaPrivateSubnet1CIDR
           - LambdaPrivateSubnet2CIDR
+          - NATPublicSubnet1CIDR
+          - NATPublicSubnet2CIDR
 
 # -------------------------------------
 # Parameters
@@ -81,6 +83,14 @@ Parameters:
     Description: "Please type the Lambda Private Subnet 2 CIDR."
     Type: String
     Default: 10.0.8.0/24
+  NATPublicSubnet1CIDR:
+    Description: "Please type the NAT Gateway Public Subnet 1 CIDR."
+    Type: String
+    Default: 10.0.9.0/24
+  NATPublicSubnet2CIDR:
+    Description: "Please type the NAT Gateway Public Subnet 2 CIDR."
+    Type: String
+    Default: 10.0.10.0/24
 
 # -------------------------------------
 # Resources
@@ -198,10 +208,10 @@ Resources:
   NATPublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
+      AvailabilityZone: !Select [1, !GetAZs ""]
       VpcId: !Ref VPC
       CidrBlock: !Ref NATPublicSubnet2CIDR
       MapPublicIpOnLaunch: false
-      AvailabilityZone: !Select [1, !GetAZs ""]
       Tags:
         - Key: Name
           Value:
@@ -360,8 +370,7 @@ Resources:
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
-  # ELBのルーティング
-  ELBPublicRoute:
+  PublicRoute:
     Type: AWS::EC2::Route
     # インターネットゲートウェイと紐付ける
     DependsOn: AttachInternetGateway
@@ -408,14 +417,14 @@ Resources:
           Value: !Ref Environment
   PrivateRoute1:
     Type: AWS::EC2::Route
-    DependsOn: AttachGateway
+    DependsOn: AttachInternetGateway
     Properties:
       RouteTableId: !Ref PrivateRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId: !Ref NATGateway1
   PrivateRoute2:
     Type: AWS::EC2::Route
-    DependsOn: AttachGateway
+    DependsOn: AttachInternetGateway
     Properties:
       RouteTableId: !Ref PrivateRouteTable
       DestinationCidrBlock: 0.0.0.0/0
@@ -484,10 +493,7 @@ Resources:
     Type: AWS::EC2::NatGateway
     Properties:
       # パブリックサブネットaに作成したElasticIPをNATに割り当てる(allocateする)
-      AllocationId:
-        Fn::GetAtt:
-          - NatGatewayEIP1
-          - AllocationId
+      AllocationId: !GetAtt NatGatewayEIP1.AllocationId
       SubnetId: !Ref NATPublicSubnet1
       Tags:
         - Key: Name
@@ -495,10 +501,7 @@ Resources:
   NatGateway2:
     Type: AWS::EC2::NatGateway
     Properties:
-      AllocationId:
-        Fn::GetAtt:
-          - NatGatewayEIP2
-          - AllocationId
+      AllocationId: !GetAtt NatGatewayEIP2.AllocationId
       SubnetId: !Ref NATPublicSubnet2
       Tags:
         - Key: Name

@@ -15,8 +15,10 @@ Metadata:
       - Label:
           default: "WAF Configuration"
         Parameters:
-          - AllowIPAddresses
+          - Route53HealthCheckerIPs
+          - IPWhiteList
           - CloudFrontDistributionID
+          - CWLogsRetentionInDays
 
 # -------------------------------------
 # Parameters
@@ -36,12 +38,20 @@ Parameters:
       - stg
       - prd
     ConstraintDescription: "Environment must be select"
-  AllowIPAddresses:
+  # ref: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/route-53-ip-addresses.html
+  Route53HealthCheckerIPs:
+    Description: "Enter the IP address for Route53 HealthChecker separated by commas. (ex: 0.0.0.0/32,1.1.1.1/32,2.2.2.2/32)"
+    Type: CommaDelimitedList
+  IPWhiteList:
     Description: "Enter the IP address for IP whitelist separated by commas (ex: 0.0.0.0/32,1.1.1.1/32,2.2.2.2/32)"
-    Type: String
+    Type: CommaDelimitedList
   CloudFrontDistributionID:
     Type: String
     Description: "Enter the CloudFront DistributionID for configuring WAFv2"
+  CWLogsRetentionInDays:
+    Description: "Enter the data retention period for CloudWatch Logs. (ex: 30)"
+    Type: String
+    AllowedValues: [30,60,90,120,150,180,365]
 
 # -------------------------------------
 # Resources
@@ -111,7 +121,15 @@ Resources:
       Description: "This List of IP addresses accessible to the application"
       Scope: CLOUDFRONT
       IPAddressVersion: IPV4
-      Addresses: !Ref AllowIPAddresses
+      Addresses: !Ref IPWhiteList
+  Route53IPAddressWhitelist:
+    Type: AWS::WAFv2::IPSet
+    Properties:
+      Name: !Sub Route53IPAddressWhitelist
+      Description: "This List of IP addresses that are used for AWS Route53 Health Checks."
+      Scope: CLOUDFRONT
+      IPAddressVersion: IPV4
+      Addresses: !Ref Route53HealthCheckerIPs
 
   # -------------------------------------
   # CloudWatch Logs Log Group (WAFv2)
@@ -120,7 +138,7 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub aws-waf-logs-for-cf-${CloudFrontDistributionID}
-      RetentionInDays: 90
+      RetentionInDays: !Ref CWLogsRetentionInDays
       Tags:
         - Key: ProjectName
           Value: !Ref ProjectName
