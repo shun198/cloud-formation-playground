@@ -248,25 +248,25 @@ Resources:
   # -------------------------------------
   # Public Route Table
   # -------------------------------------
-  ELBPublicRouteTable:
+  PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       # どのVPCと紐づけるか定義する
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-${Environment}-pub-alb-rtb
+          Value: !Sub ${ProjectName}-${Environment}-pub-rtb
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
-  # ELBのルーティング
-  ELBPublicRoute:
+  # パブリックのルーティング
+  PublicRoute:
     Type: AWS::EC2::Route
     # インターネットゲートウェイと紐付ける
     DependsOn: AttachInternetGateway
     Properties:
-      RouteTableId: !Ref ELBPublicRouteTable
+      RouteTableId: !Ref PublicRouteTable
       # インターネット(0.0.0.0/0)へのアクセスを許可
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
@@ -275,50 +275,39 @@ Resources:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref ELBPublicSubnet1
-      RouteTableId: !Ref ELBPublicRouteTable
+      RouteTableId: !Ref PublicRouteTable
   ELBPublicSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref ELBPublicSubnet2
-      RouteTableId: !Ref ELBPublicRouteTable
-  ECSPublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub ${ProjectName}-${Environment}-pub-ecs-rtb
-        - Key: ProjectName
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref Environment
+      RouteTableId: !Ref PublicRouteTable
   ECSPublicRoute:
     Type: AWS::EC2::Route
     DependsOn: AttachInternetGateway
     Properties:
-      RouteTableId: !Ref ECSPublicRouteTable
+      RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
   ECSPublicSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref ECSPublicSubnet1
-      RouteTableId: !Ref ECSPublicRouteTable
+      RouteTableId: !Ref PublicRouteTable
   ECSPublicSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref ECSPublicSubnet2
-      RouteTableId: !Ref ECSPublicRouteTable
+      RouteTableId: !Ref PublicRouteTable
   # -------------------------------------
   # Private Route Table
   # -------------------------------------
-  RDSPrivateRouteTable:
+  PrivateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-${Environment}-priv-rds-rtb
+          Value: !Sub ${ProjectName}-${Environment}-priv-rtb
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
@@ -327,12 +316,12 @@ Resources:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref RDSPrivateSubnet1
-      RouteTableId: !Ref RDSPrivateRouteTable
+      RouteTableId: !Ref PrivateRouteTable
   RDSPrivateSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref RDSPrivateSubnet2
-      RouteTableId: !Ref RDSPrivateRouteTable
+      RouteTableId: !Ref PrivateRouteTable
 
 # -------------------------------------
 # Outputs
