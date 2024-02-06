@@ -166,7 +166,7 @@ Resources:
         Aliases:
           - !Ref DomainName
         IPV6Enabled: false
-        WebACLId: !Ref WebACLArn
+        # WebACLId: !Ref WebACLArn
 
   # -------------------------------------
   # CloudFront OAC

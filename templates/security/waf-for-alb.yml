@@ -81,6 +81,8 @@ Resources:
   # -------------------------------------
   # WAFv2 ACL
   # -------------------------------------
+  # ウェブアクセスコントロールリスト (ウェブ ACL) を使用すると、保護されたリソースが応答するすべての HTTP(S) ウェブリクエストをきめ細かく制御できます
+  # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/web-acl.html
   WebACL:
     Type: AWS::WAFv2::WebACL
     Properties:
@@ -110,6 +112,9 @@ Resources:
             CloudWatchMetricsEnabled: true
             MetricName: IPAddressWhitelistRule
             SampledRequestsEnabled: true
+        # Amazon 内部脅威インテリジェンスに基づくルール
+        # ボットやその他の脅威に関連付けられている IP アドレスをブロックする場合に便利
+        # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/aws-managed-rule-groups-ip-rep.html#aws-managed-rule-groups-ip-rep-amazon
         - Name: AWS-AWSManagedRulesAmazonIpReputationList
           Priority: 20
           Statement:
@@ -122,6 +127,8 @@ Resources:
             CloudWatchMetricsEnabled: true
             MetricName: AWSManagedRulesAmazonIpReputationList
             SampledRequestsEnabled: true
+        # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/aws-managed-rule-groups-ip-rep.html#aws-managed-rule-groups-ip-rep-anonymous
+        # 匿名 IP リストのルールグループには、ビューワー ID の難読化を許可するサービスからのリクエストをブロックするルールが含まれています
         - Name: AWS-AWSManagedRulesAnonymousIpList
           Priority: 30
           Statement:
@@ -136,6 +143,9 @@ Resources:
             CloudWatchMetricsEnabled: true
             MetricName: AWSManagedRulesAnonymousIpList
             SampledRequestsEnabled: true
+        # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/aws-managed-rule-groups-baseline.html#aws-managed-rule-groups-baseline-crs
+        # ウェブアプリケーションに一般的に適用可能なルールが含まれています
+        # OWASP Top 10 などの OWASP の出版物に記載されている、リスクが高く一般的に発生するいくつかの脆弱性を含む、さまざまな脆弱性の悪用に対する保護が提供されます
         - Name: AWS-AWSManagedRulesCommonRuleSet
           Priority: 40
           Statement:
@@ -151,6 +161,8 @@ Resources:
             CloudWatchMetricsEnabled: true
             MetricName: AWSManagedRulesCommonRuleSet
             SampledRequestsEnabled: true
+        # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/aws-managed-rule-groups-baseline.html#aws-managed-rule-groups-baseline-known-bad-inputs
+        # 無効であることがわかっており脆弱性の悪用または発見に関連するリクエストパターンをブロックするルールが含まれています
         - Name: AWS-AWSManagedRulesKnownBadInputsRuleSet
           Priority: 50
           Statement:
@@ -163,8 +175,10 @@ Resources:
             CloudWatchMetricsEnabled: true
             MetricName: AWSManagedRulesKnownBadInputsRuleSet
             SampledRequestsEnabled: true
+        # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/aws-managed-rule-groups-use-case.html#aws-managed-rule-groups-use-case-linux-os
+        # Linux 固有のローカルファイルインクルージョン (LFI) 攻撃など、Linux 固有の脆弱性の悪用に関連するリクエストパターンをブロックするルール
         - Name: AWS-AWSManagedRulesLinuxRuleSet
-          Priority: 6
+          Priority: 60
           Statement:
             ManagedRuleGroupStatement:
               VendorName: AWS
@@ -175,8 +189,11 @@ Resources:
             CloudWatchMetricsEnabled: true
             MetricName: AWSManagedRulesLinuxRuleSet
             SampledRequestsEnabled: true
+        # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/aws-managed-rule-groups-use-case.html#aws-managed-rule-groups-use-case-posix-os
+        # POSIX オペレーティングシステムルールグループには、POSIX および POSIX と同等のオペレーティングシステムに固有の脆弱性の悪用 (ローカルファイルインクルージョン (LFI) 攻撃など) に関連するリクエストパターンをブロックするルールが含まれています
+        # 攻撃者がアクセスしてはならないファイルの内容を公開したり、コードを実行したりする攻撃を防ぐことができます
         - Name: AWS-AWSManagedRulesUnixRuleSet
-          Priority: 60
+          Priority: 70
           Statement:
             ManagedRuleGroupStatement:
               VendorName: AWS
@@ -187,8 +204,10 @@ Resources:
             CloudWatchMetricsEnabled: true
             MetricName: AWSManagedRulesUnixRuleSet
             SampledRequestsEnabled: true
+        # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/aws-managed-rule-groups-use-case.html#aws-managed-rule-groups-use-case-sql-db
+        # SQL インジェクション攻撃などの SQL データベースの悪用に関連するリクエストパターンをブロックするルール
         - Name: AWS-AWSManagedRulesSQLiRuleSet
-          Priority: 70
+          Priority: 80
           Statement:
             ManagedRuleGroupStatement:
               VendorName: AWS
@@ -206,7 +225,7 @@ Resources:
   IPWhitelist:
     Type: AWS::WAFv2::IPSet
     Properties:
-      Name: Custom-IPAddress-Whitelist-Prd
+      Name: Custom-IPAddress-Whitelist
       Scope: REGIONAL
       IPAddressVersion: IPV4
       Addresses: !Ref AllowIPAddresses
@@ -214,6 +233,10 @@ Resources:
   # -------------------------------------
   # WebACLAssociation
   # -------------------------------------
+  # https://docs.aws.amazon.com/ja_jp/AWSCloudFormation/latest/UserGuide/aws-resource-wafv2-webaclassociation.html
+  # リージョナルなリソースとWebACLを関連付ける
+  # CloudFrontはグルーバルなリソースなので関連付けする必要がない
+  # 代わりにCloudFrontのdistributionに設定する
   WebACLAssociation:
     Type: AWS::WAFv2::WebACLAssociation
     Properties:
@@ -259,14 +282,18 @@ Resources:
     Type: AWS::KinesisFirehose::DeliveryStream
     Properties:
       DeliveryStreamName: !Sub kinesis-s3-for-aws-waf-logs-${TargetALBName}
+      # 暗号化設定。今回はデフォルトのAWS_OWNED_CMKを指定
       DeliveryStreamEncryptionConfigurationInput:
         KeyType: AWS_OWNED_CMK
       ExtendedS3DestinationConfiguration:
         RoleARN: !GetAtt KinesisDataFirehoseRole.Arn
         BucketARN: !GetAtt WAFLogsS3Bucket.Arn
         BufferingHints:
+          # 受信データを宛先に配信する前にバッファリングする時間の長さ (秒単位)
           IntervalInSeconds: 300
+          # 宛先に配信する前に受信データに使用するバッファのサイズ (MB 単位)
           SizeInMBs: 5
+        # 圧縮形式。今回はGZIPを使用
         CompressionFormat: GZIP
         Prefix: ""
         ProcessingConfiguration:
@@ -284,6 +311,7 @@ Resources:
   # -------------------------------------
   # IAM Role
   # -------------------------------------
+  # For CloudWatch Logs
   CloudWatchLogsRole:
     Type: AWS::IAM::Role
     Properties:

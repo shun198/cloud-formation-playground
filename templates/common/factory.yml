@@ -92,10 +92,9 @@ Parameters:
     Default: GitHub
     AllowedValues:
       - GitHub
-      - GitHubEnterpriseServer
   CICDPipelineTopicName:
     Type: String
-    Default: ai-cicd-pipeline
+    Default: shun198-cicd-pipeline
   KMSKeyAliasName:
     Description: "Enter the alias name for SNS KMS key."
     Type: String
