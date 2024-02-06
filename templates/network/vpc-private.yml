@@ -19,14 +19,12 @@ Metadata:
           - VPCCIDR
           - ELBPublicSubnet1CIDR
           - ELBPublicSubnet2CIDR
-          - ECSPublicSubnet1CIDR
-          - ECSPublicSubnet2CIDR
+          - ECSPrivateSubnet1CIDR
+          - ECSPrivateSubnet2CIDR
           - RDSPrivateSubnet1CIDR
           - RDSPrivateSubnet2CIDR
           - LambdaPrivateSubnet1CIDR
           - LambdaPrivateSubnet2CIDR
-          - NATPublicSubnet1CIDR
-          - NATPublicSubnet2CIDR
 
 # -------------------------------------
 # Parameters
@@ -59,11 +57,11 @@ Parameters:
     Description: "Please type the ELB Public Subnet 2 CIDR."
     Type: String
     Default: 10.0.2.0/24
-  ECSPublicSubnet1CIDR:
+  ECSPrivateSubnet1CIDR:
     Description: "Please type the ECS Public Subnet 1 CIDR."
     Type: String
     Default: 10.0.3.0/24
-  ECSPublicSubnet2CIDR:
+  ECSPrivateSubnet2CIDR:
     Description: "Please type the ECS Public Subnet 2 CIDR."
     Type: String
     Default: 10.0.4.0/24
@@ -76,21 +74,13 @@ Parameters:
     Type: String
     Default: 10.0.6.0/24
   LambdaPrivateSubnet1CIDR:
-    Description: "Please type the Subnet CIDR block for Lambda in the 1st Availability Zone."
+    Description: "Please type the Lambda Private Subnet 1 CIDR."
     Type: String
     Default: 10.0.7.0/24
   LambdaPrivateSubnet2CIDR:
-    Description: "Please type the Subnet CIDR block for Lambda in the 2nd Availability Zone."
+    Description: "Please type the Lambda Private Subnet 2 CIDR."
     Type: String
     Default: 10.0.8.0/24
-  NATPublicSubnet1CIDR:
-    Description: "Please type the Subnet CIDR block for NAT Gateway in the 1st Availability Zone."
-    Type: String
-    Default: 10.0.9.0/24
-  NATPublicSubnet2CIDR:
-    Description: "Please type the Subnet CIDR block for NAT Gateway in the 2nd Availability Zone."
-    Type: String
-    Default: 10.0.10.0/24
 
 # -------------------------------------
 # Resources
@@ -104,8 +94,8 @@ Resources:
     Properties:
       CidrBlock: !Ref VPCCIDR
       # Route53の設定
-      # EnableDnsHostnames: true
-      # EnableDnsSupport: true
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
       Tags:
         - Key: Name
           Value: !Sub ${ProjectName}-${Environment}-vpc
@@ -114,6 +104,9 @@ Resources:
         - Key: Environment
           Value: !Ref Environment
 
+  # -------------------------------------
+  # Internet Gateway
+  # -------------------------------------
   # VPC内にインターネットゲートウェイがないとパブリックサブネットからインターネットへアクセスできないので作成
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -148,15 +141,6 @@ Resources:
       Tags:
         - Key: Name
           Value:
-            # !Sub "${ProjectName}-${Environment}-pub-alb",
-            # 入力したProject-Name、Environmentが入る
-            # !Select [0, !GetAZs ""]
-            # 該当するAZが入る(ap-northeast-1a)
-            # !Select [2, !Split ["-", !Select [0, !GetAZs ""]]]
-            # Split関数でAZ(例えばap-northeast-1a)を"-"区切りで配列として分ける
-            # !Selectを使って["ap","northeast","1a"]の2番目の値を取得(1a)
-            # "${ProjectName}-${Environment}-pub-alb"と"1a"を"-"でJoinさせると
-            # Tagは"${ProjectName}-${Environment}-pub-alb-1a"になる
             !Join [
               "-",
               [
@@ -189,56 +173,7 @@ Resources:
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
-  ECSPublicSubnet1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      CidrBlock: !Ref ECSPublicSubnet1CIDR
-      # パブリックIPv4アドレスの自動割り当て
-      # パブリックなのでtrueにする
-      MapPublicIpOnLaunch: true
-      VpcId: !Ref VPC
-      # https://chamimi.blog.jp/archives/15549977.html
-      # https://docs.aws.amazon.com/ja_jp/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-getavailabilityzones.html
-      # https://docs.aws.amazon.com/ja_jp/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-select.html
-      # !GetAzs ""で指定したリージョンのアベイラビリティーゾーンをアルファベット順にリストした配列を返している
-      # !Selectでインデックスによってオブジェクトのリストから 1 つのオブジェクトを返す
-      # !Select [ index, listOfObjects ]
-      AvailabilityZone: !Select [0, !GetAZs ""]
-      Tags:
-        - Key: Name
-          Value:
-            !Join [
-              "-",
-              [
-                !Sub "${ProjectName}-${Environment}-pub-ecs",
-                !Select [2, !Split ["-", !Select [0, !GetAZs ""]]],
-              ],
-            ]
-        - Key: ProjectName
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref Environment
-  ECSPublicSubnet2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      CidrBlock: !Ref ECSPublicSubnet2CIDR
-      MapPublicIpOnLaunch: true
-      VpcId: !Ref VPC
-      AvailabilityZone: !Select [1, !GetAZs ""]
-      Tags:
-        - Key: Name
-          Value:
-            !Join [
-              "-",
-              [
-                !Sub "${ProjectName}-${Environment}-pub-ecs",
-                !Select [2, !Split ["-", !Select [1, !GetAZs ""]]],
-              ],
-            ]
-        - Key: ProjectName
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref Environment
+  # For NAT Gateway
   NATPublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -281,9 +216,53 @@ Resources:
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
+
   # -------------------------------------
   # Private Subnet
   # -------------------------------------
+  ECSPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref ECSPrivateSubnet1CIDR
+      # プライベートなのでfalseにする
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      Tags:
+        - Key: Name
+          Value:
+            !Join [
+              "-",
+              [
+                !Sub "${ProjectName}-${Environment}-priv-ecs",
+                !Select [2, !Split ["-", !Select [0, !GetAZs ""]]],
+              ],
+            ]
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  ECSPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref ECSPrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      Tags:
+        - Key: Name
+          Value:
+            !Join [
+              "-",
+              [
+                !Sub "${ProjectName}-${Environment}-priv-ecs",
+                !Select [2, !Split ["-", !Select [1, !GetAZs ""]]],
+              ],
+            ]
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
   RDSPrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -370,14 +349,13 @@ Resources:
   # -------------------------------------
   # Public Route Table
   # -------------------------------------
-  ELBPublicRouteTable:
+  PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      # どのVPCと紐づけるか定義する
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-${Environment}-pub-alb-rtb
+          Value: !Sub ${ProjectName}-${Environment}-pub-rtb
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
@@ -388,7 +366,7 @@ Resources:
     # インターネットゲートウェイと紐付ける
     DependsOn: AttachInternetGateway
     Properties:
-      RouteTableId: !Ref ELBPublicRouteTable
+      RouteTableId: !Ref PublicRouteTable
       # インターネット(0.0.0.0/0)へのアクセスを許可
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
@@ -397,77 +375,51 @@ Resources:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref ELBPublicSubnet1
-      RouteTableId: !Ref ELBPublicRouteTable
+      RouteTableId: !Ref PublicRouteTable
   ELBPublicSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref ELBPublicSubnet2
-      RouteTableId: !Ref ELBPublicRouteTable
-  ECSPublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub ${ProjectName}-${Environment}-pub-ecs-rtb
-        - Key: ProjectName
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref Environment
-  ECSPublicRoute:
-    Type: AWS::EC2::Route
-    DependsOn: AttachInternetGateway
-    Properties:
-      RouteTableId: !Ref ECSPublicRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-  ECSPublicSubnet1RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref ECSPublicSubnet1
-      RouteTableId: !Ref ECSPublicRouteTable
-  ECSPublicSubnet2RouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref ECSPublicSubnet2
-      RouteTableId: !Ref ECSPublicRouteTable
-  NATPublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      # どのVPCと紐づけるか定義する
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub ${ProjectName}-${Environment}-pub-nat-rtb
-        - Key: ProjectName
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref Environment
+      RouteTableId: !Ref PublicRouteTable
   # For NAT Gateway
   NATPublicSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref NATPublicSubnet1
-      RouteTableId: !Ref NATPublicRouteTable
+      RouteTableId: !Ref PublicRouteTable
   NATPublicSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref NATPublicSubnet2
-      RouteTableId: !Ref NATPublicRouteTable
+      RouteTableId: !Ref PublicRouteTable
   # -------------------------------------
   # Private Route Table
   # -------------------------------------
-  RDSPrivateRouteTable:
+  PrivateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-${Environment}-priv-rds-rtb
+          Value: !Sub ${ProjectName}-${Environment}-priv-rtb
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
+  PrivateRoute1:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
+  PrivateRoute2:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway2
   RDSPrivateSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -478,6 +430,28 @@ Resources:
     Properties:
       SubnetId: !Ref RDSPrivateSubnet2
       RouteTableId: !Ref RDSPrivateRouteTable
+  # For ECS
+  ECSPrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref ECSPrivateSubnet1
+      RouteTableId: !Ref ProtectedRouteTable1
+  ECSPrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref ECSPrivateSubnet2
+      RouteTableId: !Ref ProtectedRouteTable2
+  # For Lambda
+  LambdaPrivateSubnet1Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref LambdaPrivateSubnet1
+      RouteTableId: !Ref ProtectedRouteTable1
+  LambdaPrivateSubnet2Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref LambdaPrivateSubnet2
+      RouteTableId: !Ref ProtectedRouteTable2
   # -------------------------------------
   # Nat Gateway
   # -------------------------------------
@@ -511,9 +485,6 @@ Resources:
     Properties:
       # パブリックサブネットaに作成したElasticIPをNATに割り当てる(allocateする)
       AllocationId:
-        # Fn::GetAttを使ってNatGatewayEIPのAllocationIdを取得
-        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-eip.html
-        # 公式ドキュメントでの推奨している使い方
         Fn::GetAtt:
           - NatGatewayEIP1
           - AllocationId
@@ -524,11 +495,7 @@ Resources:
   NatGateway2:
     Type: AWS::EC2::NatGateway
     Properties:
-      # パブリックサブネットaに作成したElasticIPをNATに割り当てる(allocateする)
       AllocationId:
-        # Fn::GetAttを使ってNatGatewayEIPのAllocationIdを取得
-        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-eip.html
-        # 公式ドキュメントでの推奨している使い方
         Fn::GetAtt:
           - NatGatewayEIP2
           - AllocationId
@@ -551,8 +518,8 @@ Outputs:
       !Join [
         ",",
         [
-          !Ref ECSPublicSubnet1,
-          !Ref ECSPublicSubnet2,
+          !Ref ECSPrivateSubnet1,
+          !Ref ECSPrivateSubnet2,
           !Ref ELBPublicSubnet1,
           !Ref ELBPublicSubnet2,
         ],
@@ -566,21 +533,21 @@ Outputs:
   ELBPublicSubnet2:
     Description: "A reference to the public subnet in the 2nd Availability Zone."
     Value: !Ref ELBPublicSubnet2
-  ECSPublicSubnet1:
+  ECSPrivateSubnet1:
     Description: "A reference to the public subnet in the 1st Availability Zone."
-    Value: !Ref ECSPublicSubnet1
-  ECSPublicSubnet2:
+    Value: !Ref ECSPrivateSubnet1
+  ECSPrivateSubnet2:
     Description: "A reference to the public subnet in the 2nd Availability Zone."
-    Value: !Ref ECSPublicSubnet2
+    Value: !Ref ECSPrivateSubnet2
   RDSPrivateSubnet1:
     Description: "A reference to the private subnet in the 1st Availability Zone."
     Value: !Ref RDSPrivateSubnet1
   RDSPrivateSubnet2:
     Description: "A reference to the private subnet in the 2nd Availability Zone."
     Value: !Ref RDSPrivateSubnet2
-  NATPublicSubnet1:
-    Description: "A reference to the public subnet in the 1st Availability Zone."
-    Value: !Ref NATPublicSubnet1
-  NATPublicSubnet2:
-    Description: "A reference to the public subnet in the 2nd Availability Zone."
-    Value: !Ref NATPublicSubnet2
+  LambdaPrivateSubnet1:
+    Description: "A reference to the private subnet in the 1st Availability Zone."
+    Value: !Ref LambdaPrivateSubnet1
+  LambdaPrivateSubnet2:
+    Description: "A reference to the private subnet in the 2nd Availability Zone."
+    Value: !Ref LambdaPrivateSubnet2

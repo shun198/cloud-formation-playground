@@ -83,6 +83,9 @@ Resources:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: !Ref VPCCIDR
+      # Route53の設定
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
       Tags:
         - Key: Name
           Value: !Sub ${ProjectName}-${Environment}-vpc
