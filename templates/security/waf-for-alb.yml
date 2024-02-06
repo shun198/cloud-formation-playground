@@ -94,6 +94,8 @@ Resources:
         CloudWatchMetricsEnabled: true
         MetricName: !Sub ${ProjectName}-${Environment}-waf
         SampledRequestsEnabled: true
+      # https://ops.jig-saw.com/tech-cate/layer-security-waf
+      # OSI参照モデルに基づいてPriorityを決定
       Rules:
         - Name: IPAddressWhitelistRule
           Priority: 10
