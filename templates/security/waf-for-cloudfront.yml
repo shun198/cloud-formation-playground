@@ -43,7 +43,7 @@ Parameters:
     Description: "Enter the IP address for Route53 HealthChecker separated by commas. (ex: 0.0.0.0/32,1.1.1.1/32,2.2.2.2/32)"
     Type: CommaDelimitedList
   IPWhiteList:
-    Description: "Enter the IP address for IP whitelist separated by commas (ex: 0.0.0.0/32,1.1.1.1/32,2.2.2.2/32)"
+    Description: "Enter the IP address for IP whitelist separated by commas (ex: 1.1.1.1/32,2.2.2.2/32)"
     Type: CommaDelimitedList
   CloudFrontDistributionID:
     Type: String
@@ -90,7 +90,7 @@ Resources:
   WebACL:
     Type: AWS::WAFv2::WebACL
     Properties:
-      Name: !Sub ${ProjectName}-${Environment}-waf
+      Name: !Sub ${ProjectName}-${Environment}-cloudfront-waf
       Scope: CLOUDFRONT
       DefaultAction:
         Block: {}
