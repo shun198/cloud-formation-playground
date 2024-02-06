@@ -424,12 +424,12 @@ Resources:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref RDSPrivateSubnet1
-      RouteTableId: !Ref RDSPrivateRouteTable
+      RouteTableId: !Ref PrivateRouteTable
   RDSPrivateSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref RDSPrivateSubnet2
-      RouteTableId: !Ref RDSPrivateRouteTable
+      RouteTableId: !Ref PrivateRouteTable
   # For ECS
   ECSPrivateSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
