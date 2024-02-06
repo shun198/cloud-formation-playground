@@ -435,23 +435,23 @@ Resources:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref ECSPrivateSubnet1
-      RouteTableId: !Ref ProtectedRouteTable1
+      RouteTableId: !Ref PrivateRouteTable
   ECSPrivateSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref ECSPrivateSubnet2
-      RouteTableId: !Ref ProtectedRouteTable2
+      RouteTableId: !Ref PrivateRouteTable
   # For Lambda
   LambdaPrivateSubnet1Association:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref LambdaPrivateSubnet1
-      RouteTableId: !Ref ProtectedRouteTable1
+      RouteTableId: !Ref PrivateRouteTable
   LambdaPrivateSubnet2Association:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref LambdaPrivateSubnet2
-      RouteTableId: !Ref ProtectedRouteTable2
+      RouteTableId: !Ref PrivateRouteTable
   # -------------------------------------
   # Nat Gateway
   # -------------------------------------

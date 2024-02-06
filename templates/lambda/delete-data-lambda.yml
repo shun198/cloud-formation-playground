@@ -19,8 +19,8 @@ Metadata:
       - Label:
           default: "Lambda Configuration"
         Parameters:
-          - LambdaProtectedSubnet1
-          - LambdaProtectedSubnet2
+          - LambdaPrivateSubnet1
+          - LambdaPrivateSubnet2
           - LambdaSecurityGroupID
           - LambdaArchiveBucketName
           - LambdaArchiveBucketObjectKey
@@ -56,10 +56,10 @@ Parameters:
   EventBridgeRuleNameForDataDelete:
     Description: "Enter the EventBridge rule name of Lambda function to data delete. (ex: notice-daily-jst-2600)"
     Type: String
-  LambdaProtectedSubnet1:
+  LambdaPrivateSubnet1:
     Description: "Enter the Subnet ID for Lambda in the selected VPC."
     Type: AWS::EC2::Subnet::Id
-  LambdaProtectedSubnet2:
+  LambdaPrivateSubnet2:
     Description: "Enter the Subnet ID for Lambda in the selected VPC."
     Type: AWS::EC2::Subnet::Id
   LambdaSecurityGroupID:
@@ -117,8 +117,8 @@ Resources:
     Properties:
       VpcConfig:
         SubnetIds:
-          - !Ref LambdaProtectedSubnet1
-          - !Ref LambdaProtectedSubnet2
+          - !Ref LambdaPrivateSubnet1
+          - !Ref LambdaPrivateSubnet2
         SecurityGroupIds:
           - !Ref LambdaSecurityGroupID
       Code:
