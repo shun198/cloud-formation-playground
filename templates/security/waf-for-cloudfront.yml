@@ -99,8 +99,7 @@ Resources:
         CloudWatchMetricsEnabled: true
         MetricName: !Sub ${ProjectName}-${Environment}-waf
       Rules:
-        -
-          Name: IPAddressWhitelistRule
+        - Name: IPAddressWhitelistRule
           Priority: 0
           Action:
             Allow: {}
@@ -111,6 +110,17 @@ Resources:
             SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
             MetricName: IPAddressWhitelistRule
+        - Name: Route53IPAddressWhitelist
+          Priority: 20
+          Action:
+            Allow: {}
+          Statement:
+            IPSetReferenceStatement:
+              Arn: !GetAtt Route53IPAddressWhitelist.Arn
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: Route53IPAddressWhitelist
   # -------------------------------------
   # White IP Address
   # -------------------------------------
