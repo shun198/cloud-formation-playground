@@ -1,0 +1,181 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Amplify Admin Frontend Hosting Stack"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "Amplify Configuration"
+        Parameters:
+          # For Github
+          - GitHubFGPAT
+          - GitHubRepoURL
+          - SourceBranchName
+          # For Amplify
+          - AmplifyDomainName
+          - AmplifySubDomainPrefix
+          - AmplifyPlatform
+          - APIURL
+          - FetchCredential
+          - ALBHeaderAuthName
+          - ALBHeaderAuthValue
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name. (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter."
+    Default: my-project
+  Environment:
+    Description: "Select the environment."
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+  GitHubFGPAT:
+    Description: "Enter the Github organization's fine-grained personal access token. (ex: github_pat_xxxxxxxxxx)"
+    Type: String
+    NoEcho: true
+  GitHubRepoURL:
+    Description: "Enter the Github repository URL."
+    Type: String
+  SourceBranchName:
+    Description: "Enter the source branch name in GitHub frontend repository. (ex: main)"
+    Type: String
+  AmplifyDomainName:
+    Description: "Enter the custom Amplify domain name. (Alias) (ex: shun-practice.com)"
+    Type: String
+  AmplifySubDomainPrefix:
+    Description: "Enter the custom Amplify domain name subdomain prefix. (ex: amplify)"
+    Type: String
+  AmplifyPlatform:
+    Description: "Select the Amplify app platform. (when using SSR: WEB_COMPUTE)"
+    Type: String
+    Default: WEB_COMPUTE
+    AllowedValues:
+      - WEB
+      - WEB_COMPUTE
+      - WEB_DYNAMIC
+  APIURL:
+    Description: "Enter the API URL for backend. (ex: https://api.shun-practice.com)"
+    Type: String
+  FetchCredential:
+    Description: "Enter the auth settings for API fetch from frontend."
+    Type: String
+    Default: include
+  ALBHeaderAuthName:
+    Description: "Enter the ALB header auth name. (ex: X-Auth-ALB)"
+    Type: String
+  ALBHeaderAuthValue:
+    Description: "Enter the ALB header auth value."
+    Type: String
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # Amplify Hosting
+  # -------------------------------------
+  AmplifyFrontHosting:
+    Type: AWS::Amplify::App
+    Properties:
+      Name: !Sub ${ProjectName}-${Environment}-admin-front-amplify
+      AccessToken: !Ref GitHubFGPAT
+      Repository: !Ref GitHubRepoURL
+      Platform: !Ref AmplifyPlatform
+      EnableBranchAutoDeletion: true
+      # 環境変数
+      EnvironmentVariables:
+        - Name: NEXT_PUBLIC_API_BASE_URL
+          Value: !Ref APIURL
+        - Name: NEXT_PUBLIC_CREDENTIALS
+          Value: !Ref FetchCredential
+        - Name: NEXT_PUBLIC_AUTH_NAME
+          Value: !Ref ALBHeaderAuthName
+        - Name: NEXT_PUBLIC_AUTH_VALUE
+          Value: !Ref ALBHeaderAuthValue
+        - Name: _DISABLE_L2_CACHE
+          Value: true
+        - Name: AMPLIFY_MONOREPO_APP_ROOT
+          Value: application
+      BuildSpec: |
+        version: 1
+        applications:
+          - appRoot: application
+            frontend:
+              phases:
+                preBuild:
+                  commands:
+                    - npm ci
+                build:
+                  commands:
+                    - npm run build
+              artifacts:
+                baseDirectory: .next
+                files:
+                  - "**/*"
+              cache:
+                paths:
+                  - "node_modules/**/*"
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${Environment}-admin-front-amplify
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+  # -------------------------------------
+  # Amplify Branch
+  # -------------------------------------
+  AmplifyBranch:
+    Type: AWS::Amplify::Branch
+    Properties:
+      AppId: !GetAtt AmplifyFrontHosting.AppId
+      BranchName: !Ref SourceBranchName
+      EnableAutoBuild: true
+      EnablePullRequestPreview: false
+      Framework: Next.js - SSR
+      Tags:
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: BranchName
+          Value: !Ref SourceBranchName
+
+  # -------------------------------------
+  # Amplify Custom Domain
+  # -------------------------------------
+  AmplifyCustomDomain:
+    DependsOn: AmplifyBranch
+    Type: AWS::Amplify::Domain
+    Properties:
+      AppId: !GetAtt AmplifyFrontHosting.AppId
+      DomainName: !Ref AmplifyDomainName
+      SubDomainSettings:
+        - Prefix: !Ref AmplifySubDomainPrefix
+          BranchName: !Ref SourceBranchName
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  AmplifyAppID:
+    Value: !GetAtt AmplifyFrontHosting.AppId
+  AmplifyCustomDomainURL:
+    Value: !Sub ${AmplifySubDomainPrefix}.${AmplifyCustomDomain.DomainName}
