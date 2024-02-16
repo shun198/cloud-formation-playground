@@ -15,18 +15,18 @@ Metadata:
       - Label:
           default: "Amplify Configuration"
         Parameters:
-          # For Github
-          - GitHubFGPAT
+          # GitHubへのread write権限を付与するため
+          - GitHubAccessToken
           - GitHubRepoURL
           - SourceBranchName
           # For Amplify
           - AmplifyDomainName
           - AmplifySubDomainPrefix
           - AmplifyPlatform
-          - APIURL
-          - FetchCredential
-          - ALBHeaderAuthName
-          - ALBHeaderAuthValue
+          # - APIURL
+          # - FetchCredential
+          # - ALBHeaderAuthName
+          # - ALBHeaderAuthValue
 
 # -------------------------------------
 # Parameters
@@ -45,8 +45,8 @@ Parameters:
       - dev
       - stg
       - prd
-  GitHubFGPAT:
-    Description: "Enter the Github organization's fine-grained personal access token. (ex: github_pat_xxxxxxxxxx)"
+  GitHubAccessToken:
+    Description: "Enter the Github personal access token. (ex: ghp_xxxxxxxxxx)"
     Type: String
     NoEcho: true
   GitHubRepoURL:
@@ -61,6 +61,7 @@ Parameters:
   AmplifySubDomainPrefix:
     Description: "Enter the custom Amplify domain name subdomain prefix. (ex: amplify)"
     Type: String
+  # SSRを使用する際はWEB_COMPUTEを選択
   AmplifyPlatform:
     Description: "Select the Amplify app platform. (when using SSR: WEB_COMPUTE)"
     Type: String
@@ -69,19 +70,19 @@ Parameters:
       - WEB
       - WEB_COMPUTE
       - WEB_DYNAMIC
-  APIURL:
-    Description: "Enter the API URL for backend. (ex: https://api.shun-practice.com)"
-    Type: String
-  FetchCredential:
-    Description: "Enter the auth settings for API fetch from frontend."
-    Type: String
-    Default: include
-  ALBHeaderAuthName:
-    Description: "Enter the ALB header auth name. (ex: X-Auth-ALB)"
-    Type: String
-  ALBHeaderAuthValue:
-    Description: "Enter the ALB header auth value."
-    Type: String
+  # APIURL:
+  #   Description: "Enter the API URL for backend. (ex: https://api.shun-practice.com)"
+  #   Type: String
+  # FetchCredential:
+  #   Description: "Enter the auth settings for API fetch from frontend."
+  #   Type: String
+  #   Default: include
+  # ALBHeaderAuthName:
+  #   Description: "Enter the ALB header auth name. (ex: X-Auth-ALB)"
+  #   Type: String
+  # ALBHeaderAuthValue:
+  #   Description: "Enter the ALB header auth value."
+  #   Type: String
 
 # -------------------------------------
 # Resources
@@ -90,24 +91,27 @@ Resources:
   # -------------------------------------
   # Amplify Hosting
   # -------------------------------------
+  # https://docs.aws.amazon.com/ja_jp/AWSCloudFormation/latest/UserGuide/aws-resource-amplify-app.html
   AmplifyFrontHosting:
     Type: AWS::Amplify::App
     Properties:
       Name: !Sub ${ProjectName}-${Environment}-admin-front-amplify
-      AccessToken: !Ref GitHubFGPAT
+      # GitHubにアクセスするために必要
+      AccessToken: !Ref GitHubAccessToken
       Repository: !Ref GitHubRepoURL
       Platform: !Ref AmplifyPlatform
+      # Automatically disconnect a branch in Amplify Hosting when you delete a branch from your Git repository
       EnableBranchAutoDeletion: true
       # 環境変数
       EnvironmentVariables:
-        - Name: NEXT_PUBLIC_API_BASE_URL
-          Value: !Ref APIURL
-        - Name: NEXT_PUBLIC_CREDENTIALS
-          Value: !Ref FetchCredential
-        - Name: NEXT_PUBLIC_AUTH_NAME
-          Value: !Ref ALBHeaderAuthName
-        - Name: NEXT_PUBLIC_AUTH_VALUE
-          Value: !Ref ALBHeaderAuthValue
+        # - Name: NEXT_PUBLIC_API_BASE_URL
+        #   Value: !Ref APIURL
+        # - Name: NEXT_PUBLIC_CREDENTIALS
+        #   Value: !Ref FetchCredential
+        # - Name: NEXT_PUBLIC_AUTH_NAME
+        #   Value: !Ref ALBHeaderAuthName
+        # - Name: NEXT_PUBLIC_AUTH_VALUE
+        #   Value: !Ref ALBHeaderAuthValue
         - Name: _DISABLE_L2_CACHE
           Value: true
         - Name: AMPLIFY_MONOREPO_APP_ROOT
@@ -133,7 +137,7 @@ Resources:
                   - "node_modules/**/*"
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-${Environment}-admin-front-amplify
+          Value: !Sub ${ProjectName}-${Environment}-front-amplify
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
@@ -171,6 +175,38 @@ Resources:
         - Prefix: !Ref AmplifySubDomainPrefix
           BranchName: !Ref SourceBranchName
 
+  # -------------------------------------
+  # Amplify Service Role
+  # -------------------------------------
+  AmplifyServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub AmplifyServiceRoleForCWL-${ProjectName}-${Environment}-front
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: amplify.amazonaws.com
+            Action:
+              - sts:AssumeRole
+  AmplifyServiceRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub AmplifyAccessForCWL-${ProjectName}-${Environment}-front
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:CreateLogGroup
+              - logs:DescribeLogGroups
+              - logs:PutLogEvents
+            Resource: "*"
+      Roles:
+        - Ref: AmplifyServiceRole
+
 # -------------------------------------
 # Outputs
 # -------------------------------------
@@ -179,3 +215,8 @@ Outputs:
     Value: !GetAtt AmplifyFrontHosting.AppId
   AmplifyCustomDomainURL:
     Value: !Sub ${AmplifySubDomainPrefix}.${AmplifyCustomDomain.DomainName}
+  # AmplifyBasicAuthCredentials:
+  #   Value: !Join
+  #     - " "
+  #     - - Basic
+  #       - Fn::Base64: !Sub ${AmplifyBasicAuthUserName}:${AmplifyBasicAuthPassword}
