@@ -52,9 +52,10 @@ Metadata:
         Parameters:
           - CloudFrontHostZoneID
           - ACMPublicCertificateArn
+          - AmplifyURL
           - CachePolicy
           - ResponseHeadersPolicy
-          - AssetsBucketDomainName
+          # - AssetsBucketDomainName
 
 # -------------------------------------
 # Parameters
@@ -88,15 +89,22 @@ Parameters:
   ACMPublicCertificateArn:
     Description: "Enter the ACM public certificate ARN for global region"
     Type: String
-  CachePolicy:
-    Description: "Select the CloudFront cache policy (Recommended for S3: CachingOptimized)"
+  AmplifyURL:
     Type: String
-    Default: CachingOptimized
+    Description: "Enter the Amplify URL. (ex: <branch name>.<random number>.amplifyapp.com)"
+  AuthHeaderValue:
+    Description: "Enter the encoded Amplify basic auth credentials"
+    Type: String
+  CachePolicy:
+    Description: "Select the CloudFront cache policy"
+    Type: String
+    Default: CachingDisabled
     AllowedValues:
       - CachingOptimized
       - CachingDisabled
       - CachingOptimizedForUncompressedObjects
       - Elemental-MediaPackage
+      - Amplify
   ResponseHeadersPolicy:
     Description: "Select the CloudFront response headers policy"
     Type: String
@@ -107,12 +115,12 @@ Parameters:
       - CORS-with-preflight-and-SecurityHeadersPolicy
       - SecurityHeadersPolicy
       - SimpleCORS
-  WebACLArn:
-    Description: "Enter the ARN of the WAFv2 to apply to CloudFront (ex: arn:aws:wafv2:us-east-1:012345678910:global/webacl/example/xxxxx)"
-    Type: String
-  AssetsBucketDomainName:
-    Description: "Enter the S3 bucket region domain name for static web hosting (ex: example-assets-bucket.s3.ap-northeast-1.amazonaws.com)"
-    Type: String
+  # WebACLArn:
+  #   Description: "Enter the ARN of the WAFv2 to apply to CloudFront (ex: arn:aws:wafv2:us-east-1:012345678910:global/webacl/example/xxxxx)"
+  #   Type: String
+  # AssetsBucketDomainName:
+  #   Description: "Enter the S3 bucket region domain name for static web hosting (ex: example-assets-bucket.s3.ap-northeast-1.amazonaws.com)"
+  #   Type: String
 
 # -------------------------------------
 # Resources
@@ -139,14 +147,15 @@ Resources:
     Properties:
       DistributionConfig:
         Origins:
-        - Id: S3Origin
-          DomainName: !Ref AssetsBucketDomainName
-          S3OriginConfig:
-            OriginAccessIdentity: ""
-          OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
+        - Id: Amplify
+          DomainName: !Ref AmplifyURL
+          CustomOriginConfig:
+            OriginProtocolPolicy: https-only
+          OriginCustomHeaders:
+            - HeaderName: Authorization
+              HeaderValue: !Ref AuthHeaderValue
         Enabled: true
-        DefaultRootObject: index.html
-        Comment: "S3 Static Website Hosting Distribution"
+        Comment: "Amplify Hosting Distribution"
         CustomErrorResponses:
           - ErrorCachingMinTTL: 0
             ErrorCode: 404
@@ -155,7 +164,10 @@ Resources:
         DefaultCacheBehavior:
           CachePolicyId: !FindInMap [CachePolicyIds, !Ref CachePolicy , Id]
           ResponseHeadersPolicyId: !FindInMap [ResponseHeadersPolicyIds, !Ref ResponseHeadersPolicy, Id]
-          TargetOriginId: S3Origin
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !Ref CloudFrontFunctionForBasicAuth
+          TargetOriginId: Amplify
           ViewerProtocolPolicy: redirect-to-https
         HttpVersion: http2
         ViewerCertificate:
@@ -166,20 +178,35 @@ Resources:
         Aliases:
           - !Ref DomainName
         IPV6Enabled: false
-        WebACLId: !Ref WebACLArn
+        # WebACLId: !Ref WebACLArn
 
-  # -------------------------------------
-  # CloudFront OAC
-  # -------------------------------------
-  CloudFrontOriginAccessControl:
-    Type: AWS::CloudFront::OriginAccessControl
+  # For CloudFront Functions
+  CloudFrontFunctionForBasicAuth:
+    Type: AWS::CloudFront::Function
     Properties:
-      OriginAccessControlConfig:
-        Description: "Origin Access Control For S3 Static Website Hosting"
-        Name: !Sub ${ProjectName}-${Environment}-S3OAC
-        OriginAccessControlOriginType: s3
-        SigningBehavior: always
-        SigningProtocol: sigv4
+      Name: !Sub ${ProjectName}-${Environment}-BasicAuth
+      AutoPublish: true
+      FunctionCode: |-
+        function handler(event) {
+          var request = event.request;
+          var headers = request.headers;
+          // echo -n user:pass | base64
+          var authString = "Basic QWJjMDEyMzpBYmMwMTIz";
+          if (
+            typeof headers.authorization === "undefined" ||
+            headers.authorization.value !== authString
+          ) {
+            return {
+              statusCode: 401,
+              statusDescription: "Unauthorized",
+              headers: {"www-authenticate": {value: "Basic"}}
+            };
+          }
+          return request;
+        }
+      FunctionConfig:
+        Comment: "Function for basic authentication."
+        Runtime: cloudfront-js-1.0
 
 # -------------------------------------
 # Outputs

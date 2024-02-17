@@ -23,6 +23,8 @@ Metadata:
           - AmplifyDomainName
           - AmplifySubDomainPrefix
           - AmplifyPlatform
+          - AmplifyBasicUserName
+          - AmplifyBasicPassword
           # - APIURL
           # - FetchCredential
           # - ALBHeaderAuthName
@@ -70,6 +72,19 @@ Parameters:
       - WEB
       - WEB_COMPUTE
       - WEB_DYNAMIC
+  AmplifyBasicUserName:
+    Description: "Enter the Amplify basic auth username"
+    Type: String
+    MinLength: 1
+    MaxLength: 255
+    ConstraintDescription: "AmplifyBasicUserName must be 1 to 225 characters"
+  AmplifyBasicPassword:
+    Description: "Enter the Amplify basic auth password"
+    Type: String
+    NoEcho: true
+    MinLength: 7
+    MaxLength: 255
+    ConstraintDescription: "AmplifyBasicPassword must be 7 to 225 characters"
   # APIURL:
   #   Description: "Enter the API URL for backend. (ex: https://api.shun-practice.com)"
   #   Type: String
@@ -102,6 +117,10 @@ Resources:
       Platform: !Ref AmplifyPlatform
       # Automatically disconnect a branch in Amplify Hosting when you delete a branch from your Git repository
       EnableBranchAutoDeletion: true
+      BasicAuthConfig:
+        EnableBasicAuth: true
+        Username: !Ref AmplifyBasicUserName
+        Password: !Ref AmplifyBasicPassword
       IAMServiceRole: !Ref AmplifyServiceRole
       # 環境変数
       EnvironmentVariables:
@@ -216,4 +235,8 @@ Outputs:
     Value: !GetAtt AmplifyFrontHosting.AppId
   AmplifyCustomDomainURL:
     Value: !Sub ${AmplifySubDomainPrefix}.${AmplifyCustomDomain.DomainName}
-
+  AmplifyBasicAuthCredentials:
+    Value: !Join
+      - " "
+      - - Basic
+        - Fn::Base64: !Sub ${AmplifyBasicUserName}:${AmplifyBasicPassword}
