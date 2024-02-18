@@ -2,6 +2,8 @@ from logging import getLogger
 
 from django.contrib.auth import authenticate, login, logout
 from django.http import HttpResponse, JsonResponse
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
@@ -24,6 +26,7 @@ class LoginViewSet(ViewSet):
     emergency_logger = getLogger(LoggerName.EMERGENCY.value)
 
     @action(detail=False, methods=["POST"])
+    @method_decorator(csrf_protect)
     def login(self, request):
         """ユーザのログイン"""
         serializer = LoginSerializer(data=request.data)
