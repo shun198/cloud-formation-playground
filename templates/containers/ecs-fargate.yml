@@ -187,6 +187,8 @@ Resources:
               ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/TRUSTED_ORIGINS
             - Name: DJANGO_SETTINGS_MODULE
               ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/DJANGO_SETTINGS_MODULE
+            - Name: CSRF_COOKIE_DOMAIN
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/CSRF_COOKIE_DOMAIN
           MountPoints:
             - SourceVolume: tmp-data
               ContainerPath: !Sub ${ApplicationRootPath}/tmp
