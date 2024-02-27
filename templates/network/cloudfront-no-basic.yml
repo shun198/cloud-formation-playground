@@ -1,0 +1,178 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "CloudFront Stack"
+
+# -------------------------------------
+# Mappings
+# -------------------------------------
+Mappings:
+  # CachePolicyIdは以下の記事を参照
+  # https://docs.aws.amazon.com/ja_jp/AmazonCloudFront/latest/DeveloperGuide/using-managed-cache-policies.html
+  CachePolicyIds:
+    CachingOptimized:
+      Id: 658327ea-f89d-4fab-a63d-7e88639e58f6
+    CachingDisabled:
+      Id: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+    CachingOptimizedForUncompressedObjects:
+      Id: b2884449-e4de-46a7-ac36-70bc7f1ddd6d
+    Elemental-MediaPackage:
+      Id: 08627262-05a9-4f76-9ded-b50ca2e3a84f
+    Amplify:
+      Id: 2e54312d-136d-493c-8eb9-b001f22f67d2
+  # ResponseHeadersPolicyIdは以下の記事を参照
+  # https://docs.aws.amazon.com/ja_jp/AmazonCloudFront/latest/DeveloperGuide/using-managed-response-headers-policies.html
+  ResponseHeadersPolicyIds:
+    CORS-and-SecurityHeadersPolicy:
+      Id: e61eb60c-9c35-4d20-a928-2b84e02af89c
+    CORS-With-Preflight:
+      Id: 5cc3b908-e619-4b99-88e5-2cf7f45965bd
+    CORS-with-preflight-and-SecurityHeadersPolicy:
+      Id: eaab4381-ed33-4a86-88ca-d9558dc6cd63
+    SecurityHeadersPolicy:
+      Id: 67f7725c-6f97-4210-82d7-5512b31e9d03
+    SimpleCORS:
+      Id: 60669652-455b-4ae9-85a4-c4c02393f86c
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "Route 53 Configuration"
+        Parameters:
+          - HostZoneID
+      - Label:
+          default: "CloudFront Configuration"
+        Parameters:
+          - CloudFrontHostZoneID
+          - ACMPublicCertificateArn
+          - AmplifyURL
+          - CachePolicy
+          - ResponseHeadersPolicy
+          - AssetsBucketDomainName
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter"
+    Default: my-project
+  Environment:
+    Description: "Select the environment"
+    Type: String
+    AllowedValues: [dev, stg, prd]
+    ConstraintDescription: "Environment must be select"
+  HostZoneID:
+    Description: "Select the Route 53 Hosted Zone ID"
+    Type: AWS::Route53::HostedZone::Id
+  DomainName:
+    Description: "Enter the Route 53 domain name"
+    Default: shun-practice.com
+    Type: String
+  # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset-aliastarget.html#cfn-route53-recordset-aliastarget-hostedzoneid
+  CloudFrontHostZoneID:
+    Type: String
+    Description: "Select the CloudFront hosted zone ID. (fixed value: Z2FDTNDATAQYW2)"
+    Default: Z2FDTNDATAQYW2
+    AllowedValues:
+      - Z2FDTNDATAQYW2
+  ACMPublicCertificateArn:
+    Description: "Enter the ACM public certificate ARN for global region"
+    Type: String
+  AmplifyURL:
+    Type: String
+    Description: "Enter the Amplify URL. (ex: <branch name>.<random number>.amplifyapp.com)"
+  AuthHeaderValue:
+    Description: "Enter the encoded Amplify basic auth credentials"
+    Type: String
+  CachePolicy:
+    Description: "Select the CloudFront cache policy"
+    Type: String
+    Default: CachingDisabled
+    AllowedValues:
+      - CachingOptimized
+      - CachingDisabled
+      - CachingOptimizedForUncompressedObjects
+      - Elemental-MediaPackage
+      - Amplify
+  ResponseHeadersPolicy:
+    Description: "Select the CloudFront response headers policy"
+    Type: String
+    Default: SecurityHeadersPolicy
+    AllowedValues:
+      - CORS-and-SecurityHeadersPolicy
+      - CORS-With-Preflight
+      - CORS-with-preflight-and-SecurityHeadersPolicy
+      - SecurityHeadersPolicy
+      - SimpleCORS
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # Route 53
+  # -------------------------------------
+  CloudFrontAliasRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostZoneID
+      Name: !Ref DomainName
+      Type: A
+      # CloudFront用の設定
+      AliasTarget:
+        HostedZoneId: !Ref CloudFrontHostZoneID
+        DNSName: !GetAtt AssetsDistribution.DomainName
+  # -------------------------------------
+  # CloudFront Distribution
+  # -------------------------------------
+  AssetsDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+        - Id: Amplify
+          DomainName: !Ref AmplifyURL
+          CustomOriginConfig:
+            OriginProtocolPolicy: https-only
+          OriginCustomHeaders:
+            - HeaderName: Authorization
+              HeaderValue: !Ref AuthHeaderValue
+        Enabled: true
+        Comment: "Amplify Hosting Distribution"
+        CustomErrorResponses:
+          - ErrorCachingMinTTL: 0
+            ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /404/index.html
+        DefaultCacheBehavior:
+          CachePolicyId: !FindInMap [CachePolicyIds, !Ref CachePolicy , Id]
+          ResponseHeadersPolicyId: !FindInMap [ResponseHeadersPolicyIds, !Ref ResponseHeadersPolicy, Id]
+          TargetOriginId: Amplify
+          ViewerProtocolPolicy: redirect-to-https
+        HttpVersion: http2
+        ViewerCertificate:
+          AcmCertificateArn: !Ref ACMPublicCertificateArn
+          MinimumProtocolVersion: TLSv1.2_2021
+          SslSupportMethod: sni-only
+        # 代替ドメイン名の設定に必要
+        Aliases:
+          - !Ref DomainName
+        IPV6Enabled: false
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  AssetsDistributionID:
+    Value: !Ref AssetsDistribution
