@@ -88,12 +88,6 @@ Resources:
       IAMServiceRole: !Ref AmplifyServiceRole
       # 環境変数
       EnvironmentVariables:
-        - Name: NEXT_PUBLIC_API_BASE_URL
-          Value: !Ref APIURL
-        - Name: NEXT_PUBLIC_CREDENTIALS
-          Value: !Ref FetchCredential
-        - Name: _DISABLE_L2_CACHE
-          Value: true
         - Name: AMPLIFY_MONOREPO_APP_ROOT
           Value: application
       BuildSpec: |
