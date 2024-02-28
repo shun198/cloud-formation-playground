@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": ["config:recommended", "docker:disable"],
   "baseBranches": ["main"],
   "reviewers": ["@shun198"],
   "schedule": ["* 7 * * *"],
@@ -10,9 +10,6 @@
   "automerge": false,
   "platformAutomerge": false,
   "docker-compose": {
-    "enabled": false
-  },
-  "dockerfile": {
     "enabled": false
   },
   "lockFileMaintenance": {
