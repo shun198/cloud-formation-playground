@@ -1,6 +1,37 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
+  "extends": ["config:recommended"],
+  "baseBranches": ["develop"],
+  "reviewers": ["@shun198"],
+  "schedule": ["* 7 * * *"],
+  "timezone": "Asia/Tokyo",
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
+  "automerge": false,
+  "platformAutomerge": false,
+  "docker-compose": {
+    "enabled": false
+  },
+  "dockerfile": {
+    "enabled": false
+  },
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "matchDepTypes": [
+        "dev"
+      ],
+      "matchUpdateTypes": [
+        "minor", 
+        "patch", 
+        "pin", 
+        "digest"
+      ],
+      "automerge": true
+    }
   ]
 }
+
+  
