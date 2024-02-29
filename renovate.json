@@ -1,9 +1,15 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", "docker:disable"],
-  "baseBranches": ["main"],
-  "reviewers": ["@shun198"],
-  "schedule": ["* 7 * * *"],
+  "extends": [
+    "config:recommended",
+    "docker:disable"
+  ],
+  "baseBranches": [
+    "main"
+  ],
+  "reviewers": [
+    "@shun198"
+  ],
   "timezone": "Asia/Tokyo",
   "prHourlyLimit": 0,
   "prConcurrentLimit": 0,
@@ -21,14 +27,12 @@
         "dev"
       ],
       "matchUpdateTypes": [
-        "minor", 
-        "patch", 
-        "pin", 
+        "minor",
+        "patch",
+        "pin",
         "digest"
       ],
       "automerge": true
     }
   ]
 }
-
-  
