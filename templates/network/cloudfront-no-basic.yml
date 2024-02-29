@@ -92,9 +92,6 @@ Parameters:
   AmplifyURL:
     Type: String
     Description: "Enter the Amplify URL. (ex: <branch name>.<random number>.amplifyapp.com)"
-  AuthHeaderValue:
-    Description: "Enter the encoded Amplify basic auth credentials"
-    Type: String
   CachePolicy:
     Description: "Select the CloudFront cache policy"
     Type: String
@@ -145,9 +142,6 @@ Resources:
           DomainName: !Ref AmplifyURL
           CustomOriginConfig:
             OriginProtocolPolicy: https-only
-          OriginCustomHeaders:
-            - HeaderName: Authorization
-              HeaderValue: !Ref AuthHeaderValue
         Enabled: true
         Comment: "Amplify Hosting Distribution"
         CustomErrorResponses:
