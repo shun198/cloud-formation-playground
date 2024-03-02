@@ -52,12 +52,12 @@ describe("@/pages", () => {
     );
   });
 
-  //   test('パスワードと社員番号に適切な値(00000001,test)を入力した時、ボタンを押下するとお客様一覧画面へ遷移します', async () => {
-  //     render(<LoginForm />);
-  //     await userEvent.type(screen.getByLabelText('社員番号'), '00000001');
-  //     await userEvent.tab();
-  //     await userEvent.type(screen.getByLabelText('パスワード'), 'test');
-  //     await userEvent.click(screen.getByRole('button', { name: 'ログイン' }));
-  //     expect(mockRouter.asPath).toBe('/customers');
-  //   });
+    // test('パスワードと社員番号に適切な値(00000001,test)を入力した時、ボタンを押下するとお客様一覧画面へ遷移します', async () => {
+    //   render(<LoginForm />);
+    //   await userEvent.type(screen.getByLabelText('社員番号'), '00000001');
+    //   await userEvent.tab();
+    //   await userEvent.type(screen.getByLabelText('パスワード'), 'test');
+    //   await userEvent.click(screen.getByRole('button', { name: 'ログイン' }));
+    //   expect(mockRouter.asPath).toBe('/customers');
+    // });
 });

@@ -8,8 +8,6 @@ import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import { BasicMenu } from "@/components/buttons/MenuButton";
 import { Button } from "@mui/material";
-import Pagination from "@mui/material/Pagination";
-import CreateUserDialog from "@/components/dialogs/CreateUserDialog";
 
 type CustomerData = {
   id: number;
@@ -27,7 +25,7 @@ function CustomerList() {
 
   const fetchData = async () => {
     try {
-      const apiUrl = `${process.env["NEXT_PUBLIC_API_URL"]}/api/customers`;
+      const apiUrl = "http://localhost/back/api/customers";
       const csrftoken = Cookies.get("csrftoken") || "";
       const credentials = "include";
 
@@ -43,7 +41,7 @@ function CustomerList() {
         const responseData: CustomerArray = await response.json();
         setData(responseData);
         setLoggedIn(true);
-      } else if (response.status === 401 || 403) {
+      } else if (response.status === 403) {
         setLoggedIn(false);
       } else {
         alert("エラーが発生しました");
@@ -63,7 +61,7 @@ function CustomerList() {
     }
   }, [loggedIn]);
 
-  // if (!data || !data.results) return null;
+  if (!data || !data.results) return null;
 
   return (
     <div className="customer-list">
@@ -71,9 +69,6 @@ function CustomerList() {
       <br />
       <div className="flex flex-col items-center my-[10px]">
         <h1 className="text-3xl text-gray-900">お客様情報一覧</h1>
-      </div>
-      <div className="flex flex-col items-end my-[10px]">
-        <CreateUserDialog />
       </div>
       <div>
         <Table>
@@ -88,20 +83,18 @@ function CustomerList() {
               <TableCell align="center" className="font-bold">
                 お客様カナ氏名
               </TableCell>
-              {/* 他のセルのヘッダーも同様に追加 */}
               <TableCell align="center" className="font-bold">
                 担当者
               </TableCell>
               <TableCell align="center" className="font-bold"></TableCell>
             </TableRow>
           </TableHead>
-          {data.map((item, index) => {
+          {data.results.map((item, index) => {
             return (
               <TableBody key={index}>
                 <TableCell align="center">{item.created_at}</TableCell>
                 <TableCell align="center">{item.name}</TableCell>
                 <TableCell align="center">{item.kana}</TableCell>
-                {/* 他のセルも同様に追加 */}
                 <TableCell align="center">{item.updated_by}</TableCell>
                 <TableCell align="center">
                   <Button
@@ -118,9 +111,9 @@ function CustomerList() {
           })}
         </Table>
       </div>
-      <div></div>
     </div>
   );
 }
 
 export default CustomerList;
+

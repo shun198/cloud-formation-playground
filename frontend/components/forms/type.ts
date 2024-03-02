@@ -26,3 +26,14 @@ export type CreateUserType = {
     post_no: string;
   };
 };
+
+export type CustomerType = {
+  id: number;
+  name: string;
+  kana: string;
+  email: string;
+  phone_no: string;
+  created_at: string;
+  updated_by: string;
+};
+

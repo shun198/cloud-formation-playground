@@ -46,8 +46,10 @@ function UserList() {
       if (response.ok) {
         setLoggedIn(true);
         fetchUserData();
-      } else if (response.status === 401 || 403) {
+      } else if (response.status === 401 || response.status === 403) {
         setLoggedIn(false);
+        console.log(response.status)
+        console.log("fetchActiveが401か403")
         router.push("/"); // ログインしていない場合にルートページにリダイレクト
       } else if (response.status === 404) {
         router.replace("/404"); // IDが存在しない場合は404ページへリダイレクト
@@ -141,11 +143,13 @@ function UserList() {
 
   useEffect(() => {
     if (!loggedIn) {
+      console.log(loggedIn)
+      console.log("実行されている")
       router.push("/");
     }
   }, [loggedIn]);
 
-  // if (!data || !data.results) return null;
+  if (!data || !data.results) return null;
 
   return (
     <div className="customer-list">
@@ -182,7 +186,7 @@ function UserList() {
               <TableCell align="center" className="font-bold"></TableCell>
             </TableRow>
           </TableHead>
-          {data.map((item, index) => (
+          {data.results.map((item, index) => (
             <TableBody key={index}>
               <TableCell align="center">{item.employee_number}</TableCell>
               <TableCell align="center">{item.username}</TableCell>

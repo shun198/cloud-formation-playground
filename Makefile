@@ -20,6 +20,9 @@ build:
 install:
 	npm install $(FRONTEND_PATH)
 
+run:
+	npm run dev $(FRONTEND_PATH)
+
 down:
 	docker-compose down
 
