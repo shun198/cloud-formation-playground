@@ -9,7 +9,7 @@
   "prConcurrentLimit": 0,
   "automerge": false,
   "platformAutomerge": false,
-  "addLabels": ["renovate"],
+  "labels": ["renovate"],
   "docker-compose": {
     "enabled": false
   },
