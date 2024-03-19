@@ -24,7 +24,7 @@
       "matchDatasources": [
         "docker"
       ],
-      "matchPackagePatterns": ["mysql"],
+      "matchPackagePatterns": ["postgres"],
       "enabled": false
     },
     {
