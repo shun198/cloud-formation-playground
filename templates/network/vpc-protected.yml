@@ -26,6 +26,8 @@ Metadata:
           - ECSProtectedSubnet2CIDR
           - LambdaProtectedSubnet1CIDR
           - LambdaProtectedSubnet2CIDR
+          - InternalALBPrivateSubnet1CIDR
+          - InternalALBPrivateSubnet2CIDR
           - RDSPrivateSubnet1CIDR
           - RDSPrivateSubnet2CIDR
           - VPCFlowLogsRetentionInDays
@@ -82,6 +84,12 @@ Parameters:
     Type: String
   LambdaProtectedSubnet2CIDR:
     Description: "Enter the Subnet CIDR block for Lambda in the 2nd Availability Zone"
+    Type: String
+  InternalALBPrivateSubnet1CIDR:
+    Description: "Enter the Subnet CIDR block for Internal ALB in the 1st Availability Zone"
+    Type: String
+  InternalALBPrivateSubnet2CIDR:
+    Description: "Enter the Subnet CIDR block for Internal ALB in the 2nd Availability Zone"
     Type: String
   RDSPrivateSubnet1CIDR:
     Description: "Enter the Subnet CIDR block for RDS in the 1st Availability Zone"
@@ -377,6 +385,43 @@ Resources:
   # -------------------------------------
   # Private Subnets
   # -------------------------------------
+  # For Internal ALB
+  InternalALBPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref InternalALBPrivateSubnet1CIDR
+      VpcId: !Ref VPC
+      AvailabilityZone: !Ref AvailabilityZone1
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          # output-image: my-project-dev-priv-internal-alb-1a
+          Value: !Join
+            - "-"
+            - - !Sub "${ProjectName}-${Environment}-priv-internal-alb"
+              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone1]]]]
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  InternalALBPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref InternalALBPrivateSubnet2CIDR
+      VpcId: !Ref VPC
+      AvailabilityZone: !Ref AvailabilityZone2
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          # output-image: my-project-dev-priv-internal-alb-1c
+          Value: !Join
+            - "-"
+            - - !Sub "${ProjectName}-${Environment}-priv-internal-alb"
+              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone2]]]]
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
   # For RDS
   RDSPrivateSubnet1:
     Type: AWS::EC2::Subnet
@@ -635,8 +680,26 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId: !If
         - IsPrdEnv
-        - !Ref NATGateway1
         - !Ref NATGateway2
+        - !Ref NATGateway1
+
+  # -------------------------------------
+  # Security Group
+  # -------------------------------------
+  # インバウンドポートを許可しないセキュリティグループ
+  NoIngressSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: no-ingress-sg
+      GroupDescription: "Security group with no ingress rule"
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: no-ingress-sg
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
 
 # -------------------------------------
 # Outputs
@@ -669,10 +732,18 @@ Outputs:
   LambdaProtectedSubnet2:
     Description: "A reference to the protected subnet in the 2nd Availability Zone"
     Value: !Ref LambdaProtectedSubnet2
+  InternalALBPrivateSubnet1:
+    Description: "A reference to the private subnet in the 1st Availability Zone."
+    Value: !Ref InternalALBPrivateSubnet1
+  InternalALBPrivateSubnet2:
+    Description: "A reference to the private subnet in the 2nd Availability Zone."
+    Value: !Ref InternalALBPrivateSubnet2
   RDSPrivateSubnet1:
     Description: "A reference to the private subnet in the 1st Availability Zone"
     Value: !Ref RDSPrivateSubnet1
   RDSPrivateSubnet2:
     Description: "A reference to the private subnet in the 2nd Availability Zone"
     Value: !Ref RDSPrivateSubnet2
-
+  NoIngressSecurityGroup:
+    Description: "Security group with no ingress rule"
+    Value: !Ref NoIngressSecurityGroup
