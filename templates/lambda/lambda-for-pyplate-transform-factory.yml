@@ -1,0 +1,135 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Lambda Function Stack For PyPlate Transform Factory"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "Lambda Configuration"
+        Parameters:
+          - LambdaArchiveBucketName
+          - LambdaArchiveBucketObjectKey
+          - LambdaHandler
+          - LambdaMemorySize
+          - LambdaTimeout
+          - LambdaRuntime
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter"
+    Default: my-project
+  Environment:
+    Description: "Select the environment"
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment must be select"
+  LambdaArchiveBucketName:
+    Type: String
+    Description: "Enter the S3 Bucket name for Lambda zip archive"
+  LambdaArchiveBucketObjectKey:
+    Type: String
+    Description: "Enter the S3 Bucket object key for Lambda zip archive"
+  LambdaHandler:
+    Type: String
+    Description: "Enter the Lambda function handler (default: lambda_function.lambda_handler)"
+    Default: lambda_function.lambda_handler
+  LambdaMemorySize:
+    Type: Number
+    Description: "Enter the Lambda function memory size (MiB) (default: 128)"
+    Default: 128
+    MinValue: 128
+    MaxValue: 10240
+  LambdaTimeout:
+    Type: Number
+    Description: "Enter the Lambda function timeout second (default: 30)"
+    Default: 30
+    MinValue: 1
+    MaxValue: 900
+  LambdaRuntime:
+    Type: String
+    Description: "Enter the Lambda function runtime (default: python3.12)"
+    AllowedValues:  
+      - python3.12  
+    Default: python3.12
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # Lambda Function
+  # -------------------------------------
+  PyPlateTransformLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: !Ref LambdaArchiveBucketName
+        S3Key: !Ref LambdaArchiveBucketObjectKey
+      FunctionName: !Sub ${ProjectName}-${Environment}-pyplate-transform
+      Description: "CloudFormation で PyPlate マクロを使用するための Lambda 関数"
+      Handler: !Ref LambdaHandler
+      MemorySize: !Ref LambdaMemorySize
+      Role: !GetAtt TransformLambdaExecutionRole.Arn
+      Runtime: !Ref LambdaRuntime
+      Timeout: !Ref LambdaTimeout
+      PackageType: Zip
+  PyPlateTransformFunctionPermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt PyPlateTransformLambdaFunction.Arn
+      Principal: cloudformation.amazonaws.com
+  PyPlateTransform:
+    Type: AWS::CloudFormation::Macro
+    Properties:
+      Name: PyPlate
+      Description: "Processes inline python in templates"
+      FunctionName: !GetAtt PyPlateTransformLambdaFunction.Arn
+
+  # -------------------------------------
+  # IAM Role
+  # -------------------------------------
+  TransformLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub LambdaRoleForPyPlateTransform-${ProjectName}-${Environment}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /service-role/
+      Policies:
+        - PolicyName: !Sub LambdaAccessForPyPlateTransform-${ProjectName}-${Environment}
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub
+                  - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${LambdaFunctionName}:*
+                  - {LambdaFunctionName: !Sub "${ProjectName}-${Environment}-pyplate-transform"}
