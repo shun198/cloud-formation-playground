@@ -1,0 +1,159 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Lambda Function Stack For Data Deletion API Call"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "Lambda Configuration"
+        Parameters:
+          - LambdaProtectedSubnet1
+          - LambdaProtectedSubnet2
+          - LambdaSecurityGroupID
+          - LambdaArchiveBucketName
+          - LambdaArchiveBucketObjectKey
+          - ParametersSecretsLambdaExtensionArn
+          - Handler
+          - MemorySize
+          - Timeout
+          - Runtime
+
+# -------------------------------------
+# Input parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name. (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter."
+    Default: my-project
+  Environment:
+    Description: "Select the environment."
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment must be select."
+  LambdaProtectedSubnet1:
+    Description: "Enter the Subnet ID for Lambda in the selected VPC."
+    Type: AWS::EC2::Subnet::Id
+  LambdaProtectedSubnet2:
+    Description: "Enter the Subnet ID for Lambda in the selected VPC."
+    Type: AWS::EC2::Subnet::Id
+  LambdaSecurityGroupID:
+    Description: "Select the Security Group ID for Lambda."
+    Type: AWS::EC2::SecurityGroup::Id
+  LambdaArchiveBucketName:
+    Description: "Enter the S3 bucket name for Lambda zip archive."
+    Type: String
+  LambdaArchiveBucketObjectKey:
+    Description: "Enter the S3 bucket object key for Lambda zip archive."
+    Type: String
+  # @see https://docs.aws.amazon.com/ja_jp/systems-manager/latest/userguide/ps-integration-lambda-extensions.html#ps-integration-lambda-extensions-add
+  ParametersSecretsLambdaExtensionArn:
+    Description: "Enter the Lambda Extension ARN for AWS Parameters and Secrets."
+    Type: String
+    Default: arn:aws:lambda:ap-northeast-1:133490724326:layer:AWS-Parameters-and-Secrets-Lambda-Extension:11
+  Handler:
+    Description: "Enter the Lambda function name to delete data. (default: lambda_function.lambda_handler)"
+    Type: String
+    Default: lambda_function.lambda_handler
+  MemorySize:
+    Description: "Enter the Lambda function memory size. (MiB) (default: 128)"
+    Type: Number
+    Default: 128
+    MinValue: 128
+    MaxValue: 10240
+  Timeout:
+    Description: "Enter the Lambda function timeout second. (default: 30)"
+    Type: Number
+    Default: 30
+    MinValue: 1
+    MaxValue: 900
+  Runtime:
+    Description: "Enter the Lambda function runtime."
+    Type: String
+    AllowedValues:
+      - python3.11
+    Default: python3.11
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # Lambda Function
+  # -------------------------------------
+  DataDeleteAPICallLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      VpcConfig:
+        SubnetIds:
+          - !Ref LambdaProtectedSubnet1
+          - !Ref LambdaProtectedSubnet2
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID
+      Code:
+        S3Bucket: !Ref LambdaArchiveBucketName
+        S3Key: !Ref LambdaArchiveBucketObjectKey
+      Layers:
+        - !Ref ParametersSecretsLambdaExtensionArn
+      FunctionName: !Sub ${ProjectName}-${Environment}-upload-csv-api-call
+      Description: !Sub "S3内のCSVファイルのデータをアップロードする Lambda 関数"
+      Handler: !Ref Handler
+      MemorySize: !Ref MemorySize
+      Role: !GetAtt LambdaRoleForUploadCSV.Arn
+      Runtime: !Ref Runtime
+      Timeout: !Ref Timeout
+      PackageType: Zip
+
+  # -------------------------------------
+  # IAM Role
+  # -------------------------------------
+  LambdaRoleForUploadCSV:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub LambdaRole-${ProjectName}-${Environment}-upload-csv
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub LambdaAccess-${ProjectName}-${Environment}-upload-csv
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - kms:Decrypt
+                Resource: "*"
+              - Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub
+                  - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${DataDeleteAPICallLambda}:*
+                  - {
+                      DataDeleteAPICallLambda: !Sub "${ProjectName}-${Environment}-upload-csv-api-call",
+                    }

@@ -65,8 +65,8 @@ Parameters:
   LambdaRuntime:
     Type: String
     Description: "Enter the Lambda function runtime (default: python3.12)"
-    AllowedValues:  
-      - python3.12  
+    AllowedValues:
+      - python3.12
     Default: python3.12
 
 # -------------------------------------
