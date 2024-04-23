@@ -19,8 +19,8 @@ Metadata:
       - Label:
           default: "Lambda Configuration"
         Parameters:
-          - LambdaPrivateSubnet1
-          - LambdaPrivateSubnet2
+          - LambdaProtectedSubnet1
+          - LambdaProtectedSubnet2
           - LambdaSecurityGroupID
           - LambdaArchiveBucketName
           - LambdaArchiveBucketObjectKey
@@ -30,7 +30,7 @@ Metadata:
           - Timeout
           - Runtime
       - Label:
-          default: "SSM Parameter Store For HeartLink Configuration"
+          default: "SSM Parameter Store For Configuration"
         Parameters:
           - SSMParameterNameForInternalBackSrvUrl
           - SSMParameterNameForLambdaToken
@@ -56,10 +56,10 @@ Parameters:
   EventBridgeRuleNameForDataDelete:
     Description: "Enter the EventBridge rule name of Lambda function to data delete. (ex: notice-daily-jst-2600)"
     Type: String
-  LambdaPrivateSubnet1:
+  LambdaProtectedSubnet1:
     Description: "Enter the Subnet ID for Lambda in the selected VPC."
     Type: AWS::EC2::Subnet::Id
-  LambdaPrivateSubnet2:
+  LambdaProtectedSubnet2:
     Description: "Enter the Subnet ID for Lambda in the selected VPC."
     Type: AWS::EC2::Subnet::Id
   LambdaSecurityGroupID:
@@ -117,8 +117,8 @@ Resources:
     Properties:
       VpcConfig:
         SubnetIds:
-          - !Ref LambdaPrivateSubnet1
-          - !Ref LambdaPrivateSubnet2
+          - !Ref LambdaProtectedSubnet1
+          - !Ref LambdaProtectedSubnet2
         SecurityGroupIds:
           - !Ref LambdaSecurityGroupID
       Code:
