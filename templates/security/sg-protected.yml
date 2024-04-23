@@ -1,7 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: "Security Group Stack"
-# カスタムマクロの有効化
-Transform: PyPlate
 
 # -------------------------------------
 # Metadata

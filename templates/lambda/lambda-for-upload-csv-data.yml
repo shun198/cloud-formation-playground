@@ -84,8 +84,8 @@ Parameters:
     Description: "Enter the Lambda function runtime."
     Type: String
     AllowedValues:
-      - python3.11
-    Default: python3.11
+      - python3.12
+    Default: python3.12
 # -------------------------------------
 # Resources
 # -------------------------------------
@@ -93,7 +93,7 @@ Resources:
   # -------------------------------------
   # Lambda Function
   # -------------------------------------
-  DataDeleteAPICallLambda:
+  UploadCSVLambda:
     Type: AWS::Lambda::Function
     Properties:
       VpcConfig:
@@ -153,7 +153,7 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: !Sub
-                  - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${DataDeleteAPICallLambda}:*
+                  - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${UploadCSVLambda}:*
                   - {
-                      DataDeleteAPICallLambda: !Sub "${ProjectName}-${Environment}-upload-csv-api-call",
+                      UploadCSVLambda: !Sub "${ProjectName}-${Environment}-upload-csv-api-call",
                     }
