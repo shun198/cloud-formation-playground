@@ -65,7 +65,31 @@ Resources:
             NoncurrentVersionExpiration:
               NewerNoncurrentVersions: 3
               NoncurrentDays: 365
-
+  # For Lambda Archive
+  LambdaArchiveBucket:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      BucketName: !Sub ${ProjectName}-${Environment}-lambda-archive-${AWS::Region}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpiresAfter365DaysFor4thOlderVersion
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NewerNoncurrentVersions: 3
+              NoncurrentDays: 365
 # -------------------------------------
 # Output Parameters
 # -------------------------------------
@@ -74,4 +98,8 @@ Outputs:
     Value: !Ref CloudFormationTemplatesBucket
   CloudFormationTemplatesBucketArn:
     Value: !GetAtt CloudFormationTemplatesBucket.Arn
+  LambdaArchiveBucketName:
+    Value: !Ref LambdaArchiveBucket
+  LambdaArchiveBucketArn:
+    Value: !GetAtt  LambdaArchiveBucket.Arn
 
