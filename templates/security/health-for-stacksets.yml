@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "AWS Health API Notification Stack"
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  HealthTopicName:
+    Description: "Enter the SNS Topic name for notification when a health event is detected"
+    Type: String
+    Default: ai-health
+  KMSKeyAliasName:
+    Description: "Enter the alias name for SNS KMS key"
+    Type: String
+    Default: alias/cmk/sns
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # SNS Topic
+  # -------------------------------------
+  # AWS Health 通知
+  HealthTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Ref HealthTopicName
+      TopicName: !Ref HealthTopicName
+      KmsMasterKeyId: !Ref KMSKeyAliasName
+  # AWS Health 通知トピック用
+  HealthTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AWSHealthSNSPolicy
+            Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - sns:Publish
+            Resource: !Ref HealthTopic
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+      Topics:
+        - !Ref HealthTopic
+
+  # -------------------------------------
+  # EventBridge
+  # -------------------------------------
+  HealthEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: notice-aws-health
+      Description: "AWS Health によるアカウント固有の Event を Slack に通知"
+      EventPattern:
+        source:
+          - aws.health
+      Targets:
+        - Arn: !Sub arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${HealthTopicName}
+          Id: Health
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  HealthTopicArn:
+    Value: !Ref HealthTopic
+  HealthEventRuleArn:
+    Value: !GetAtt HealthEventRule.Arn
