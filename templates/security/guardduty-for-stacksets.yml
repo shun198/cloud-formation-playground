@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "GuardDuty Stack"
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  SecurityTopicName:
+    Description: "Enter the SNS Topic name for notification when a security event is detected"
+    Type: String
+    Default: ai-security
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # GuardDuty
+  # -------------------------------------
+  GuardDuty:
+    Type: AWS::GuardDuty::Detector
+    Properties:
+      Enable: true
+
+  # -------------------------------------
+  # EventBridge
+  # -------------------------------------
+  GuardDutyEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: notice-guardduty-findings
+      Description: "GuardDuty による脅威検知 Event を Slack に通知"
+      EventPattern:
+        source:
+          - aws.guardduty
+        detail-type:
+          - GuardDuty Finding
+      Targets:
+        - Arn: !Sub arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${SecurityTopicName}
+          Id: GuardDuty
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  GuardDutyEventRuleArn:
+    Value: !GetAtt GuardDutyEventRule.Arn

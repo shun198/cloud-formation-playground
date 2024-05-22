@@ -1,0 +1,7 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Detective Stack"
+
+Resources:
+  # GuardDuty 有効化後 48h 以上経過後でないと有効化できない
+  DetectiveGraph:
+    Type: AWS::Detective::Graph
