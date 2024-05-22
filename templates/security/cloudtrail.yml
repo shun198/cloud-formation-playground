@@ -1,0 +1,177 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "CloudTrail Stack"
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  CloudTrailBucketName:
+    Type: String
+    Description: "Enter the S3 bucket name for CloudTrail logs (default: ai-cloudtrail-logs)"
+    Default: ai-cloudtrail-logs
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # S3 Bucket
+  # -------------------------------------
+  CloudTrailBucket:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::S3::Bucket
+    Properties:
+      # 複数リージョンに展開する場合の S3 バケット名重複防止
+      # output-image: ai-cloudtrail-logs-abcd0123
+      BucketName: !Join
+        - "-"
+        - - !Ref CloudTrailBucketName
+          - !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId]]]]
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: Retain1YearAndArchive4Years
+            Status: Enabled
+            ExpirationInDays: 1825
+            Transitions:
+              - StorageClass: GLACIER
+                TransitionInDays: 365
+  CloudTrailBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CloudTrailBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: CloudTrailACLCheck
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action:
+              - s3:GetBucketAcl
+            Resource:
+              - !Sub arn:aws:s3:::${CloudTrailBucket}
+          - Sid: CloudTrailWrite
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action:
+              - s3:PutObject
+            Resource:
+              - !Sub arn:aws:s3:::${CloudTrailBucket}/AWSLogs/${AWS::AccountId}/*
+            Condition:
+              StringEquals:
+                "s3:x-amz-acl": "bucket-owner-full-control"
+
+  # -------------------------------------
+  # KMS (Customer Managed Key)
+  # -------------------------------------
+  CloudTrailKey:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::KMS::Key
+    Properties:
+      Description: "for CloudTrail log files"
+      Enabled: true
+      KeyPolicy:
+        Version: 2012-10-17
+        Id: KMSKeyPolicyCreatedByCloudTrail
+        Statement:
+          - Sid: EnableIAMUserPermissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action:
+              - kms:*
+            Resource: "*"
+          - Sid: AllowCloudTrailToEncryptLogs
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action:
+              - kms:GenerateDataKey*
+            Resource: "*"
+            Condition:
+              StringLike:
+                "kms:EncryptionContext:aws:cloudtrail:arn": !Sub arn:aws:cloudtrail:*:${AWS::AccountId}:trail/*
+          - Sid: AllowCloudTrailToDescribeKey
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action:
+              - kms:DescribeKey
+            Resource: "*"
+          - Sid: AllowPrincipalsToDecryptLogFiles
+            Effect: Allow
+            Principal:
+              AWS: "*"
+            Action:
+              - kms:Decrypt
+              - kms:ReEncryptFrom
+            Resource: "*"
+            Condition:
+              StringEquals:
+                "kms:CallerAccount": !Ref AWS::AccountId
+              StringLike:
+                "kms:EncryptionContext:aws:cloudtrail:arn": !Sub arn:aws:cloudtrail:*:${AWS::AccountId}:trail/*
+          - Sid: AllowAliasCreationDuringSetup
+            Effect: Allow
+            Principal:
+              AWS: "*"
+            Action:
+              - kms:CreateAlias
+            Resource: "*"
+            Condition:
+              StringEquals:
+                "kms:CallerAccount": !Ref AWS::AccountId
+                "kms:ViaService": "ec2.ap-northeast-1.amazonaws.com"
+          - Sid: EnableCrossAccountLogDecryption
+            Effect: Allow
+            Principal:
+              AWS: "*"
+            Action:
+              - kms:Decrypt
+              - kms:ReEncryptFrom
+            Resource: "*"
+            Condition:
+              StringEquals:
+                "kms:CallerAccount": !Ref AWS::AccountId
+              StringLike:
+                "kms:EncryptionContext:aws:cloudtrail:arn": !Sub arn:aws:cloudtrail:*:${AWS::AccountId}:trail/*
+
+  # -------------------------------------
+  # CloudTrail
+  # -------------------------------------
+  CloudTrail:
+    DependsOn:
+      - CloudTrailBucketPolicy
+    Type: AWS::CloudTrail::Trail
+    Properties:
+      TrailName: !Ref CloudTrailBucketName
+      EnableLogFileValidation: true
+      IsLogging: true
+      IsMultiRegionTrail: true
+      IncludeGlobalServiceEvents: true
+      KMSKeyId: !Ref CloudTrailKey
+      S3BucketName:
+        !Ref CloudTrailBucket
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  CloudTrailName:
+    Value: !Ref CloudTrail
+  CloudTrailBucketName:
+    Value: !Ref CloudTrailBucket
+
