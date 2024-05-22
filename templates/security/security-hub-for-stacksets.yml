@@ -1,0 +1,10 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Security Hub Stack"
+
+Resources:
+  # 以下のセキュリティ標準を有効化
+  # 1. AWS Foundational Security Best Practices
+  # 2. CIS AWS Foundations
+  # PCI DSS を有効化したい場合はコンソールから手動で有効化する必要がある
+  SecurityHub:
+    Type: AWS::SecurityHub::Hub
