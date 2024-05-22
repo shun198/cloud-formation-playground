@@ -8,7 +8,7 @@ Parameters:
   SecurityTopicName:
     Description: "Enter the SNS Topic name for notification when a security event is detected"
     Type: String
-    Default: ai-security
+    Default: security
 
 # -------------------------------------
 # Resources

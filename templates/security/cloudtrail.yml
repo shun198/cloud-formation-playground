@@ -7,9 +7,8 @@ Description: "CloudTrail Stack"
 Parameters:
   CloudTrailBucketName:
     Type: String
-    Description: "Enter the S3 bucket name for CloudTrail logs (default: ai-cloudtrail-logs)"
-    Default: ai-cloudtrail-logs
-
+    Description: "Enter the S3 bucket name for CloudTrail logs (default: cloudtrail-logs)"
+    Default: cloudtrail-log
 # -------------------------------------
 # Resources
 # -------------------------------------
@@ -23,7 +22,7 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       # 複数リージョンに展開する場合の S3 バケット名重複防止
-      # output-image: ai-cloudtrail-logs-abcd0123
+      # output-image: cloudtrail-logs-abcd0123
       BucketName: !Join
         - "-"
         - - !Ref CloudTrailBucketName

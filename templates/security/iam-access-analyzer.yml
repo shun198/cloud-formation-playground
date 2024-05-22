@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "IAM Access Analyzer Stack"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    # パラメータの並び順を記載
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "IAM Access Analyzer Configuration"
+        Parameters:
+          - AnalyzerName
+      - Label:
+          default: "EventBridge Configuration"
+        Parameters:
+          - SecurityTopicName
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name. (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be entered."
+    Default: my-project
+  Environment:
+    Description: "Select a environment name."
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment must be selected."
+  AnalyzerName:
+    Description: "Access analyzer name. (default: access-analyzer)"
+    Type: String
+    Default: access-analyzer
+  SecurityTopicName:
+    Description: "Enter the SNS topic name for notification when a security event is detected."
+    Type: String
+    Default: security
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # IAM Access Analyzer
+  # -------------------------------------
+  IAMAccessAnalyzer:
+    Type: AWS::AccessAnalyzer::Analyzer
+    Properties:
+      Type: ACCOUNT
+      AnalyzerName: !Sub ${ProjectName}-${Environment}-${AnalyzerName}
+
+  # -------------------------------------
+  # EventBridge
+  # -------------------------------------
+  AccessAnalyzerEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: notice-access-analyzer-findings
+      Description: "IAM Access Analyzer による分析結果イベント を Slack に通知"
+      EventPattern:
+        source:
+          - "aws.access-analyzer"
+        detail-type:
+          - "Access Analyzer Finding"
+        detail:
+          status:
+            - ACTIVE
+      Targets:
+        - Arn: !Sub arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${SecurityTopicName}
+          Id: AccessAnalyzer
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  AccessAnalyzerEventRuleArn:
+    Value: !GetAtt AccessAnalyzerEventRule.Arn
