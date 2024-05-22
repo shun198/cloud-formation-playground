@@ -1,0 +1,230 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "AWS Config Stack"
+
+# -------------------------------------
+# Mappings
+# -------------------------------------
+Mappings:
+  Settings:
+    FrequencyMap:
+      1hour   : One_Hour
+      3hours  : Three_Hours
+      6hours  : Six_Hours
+      12hours : Twelve_Hours
+      24hours : TwentyFour_Hours
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Config Configuration"
+        Parameters:
+          # S3
+          - ConfigBucketName
+          # Recorder
+          - EnableAllSupported
+          - ResourceTypes
+          # Delivery Channel
+          - DeliveryChannelName
+          - Frequency
+          # Delivery Notifications
+          - ConfigTopicArn
+          - KMSKeyAliasName
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ConfigBucketName:
+    Type: String
+    Description: "Enter the S3 bucket name for AWS Config logs"
+    Default: ai-config-logs
+  EnableAllSupported:
+    Description: "Indicates whether to record all supported resource types"
+    Type: String
+    Default: true
+    AllowedValues:
+      - true
+      - false
+  ResourceTypes:
+    Description: "A list of valid AWS resource types to include in this recording group, such as AWS::EC2::Instance or AWS::CloudTrail::Trail"
+    Type: List<String>
+    Default: <All>
+  DeliveryChannelName:
+    Description: "The name of the delivery channel"
+    Type: String
+    Default: <Generated>
+  Frequency:
+    Description: "The frequency with which AWS Config delivers configuration snapshots"
+    Type: String
+    Default: 24hours
+    AllowedValues:
+      - 1hour
+      - 3hours
+      - 6hours
+      - 12hours
+      - 24hours
+  ConfigTopicArn:
+    Description: "The Amazon Resource Name (ARN) of the Amazon Simple Notification Service (Amazon SNS) topic that AWS Config delivers notifications"
+    Type: String
+    Default: <New Topic>
+  KMSKeyAliasName:
+    Description: "Enter the alias name for SNS KMS key"
+    Type: String
+    Default: alias/cmk/sns
+
+# -------------------------------------
+# Conditions
+# -------------------------------------
+Conditions:
+  IsEnableAllSupported: !Equals [ !Ref EnableAllSupported, true ]
+  IsGeneratedDeliveryChannelName: !Equals [ !Ref DeliveryChannelName, <Generated> ]
+  CreateTopic: !Equals [ !Ref ConfigTopicArn, <New Topic> ]
+  # Config のグローバルリソース記録を ap-northeast-1 に限定
+  IncludeGlobalResourceRegion: !Equals [ !Ref AWS::Region, ap-northeast-1 ]
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # S3 Bucket
+  # -------------------------------------
+  ConfigBucket:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketEncryption:
+          ServerSideEncryptionConfiguration:
+            - ServerSideEncryptionByDefault:
+                SSEAlgorithm: AES256
+      # 複数リージョンに展開する場合の S3 バケット名重複防止
+      # output-image: ai-config-logs-012345678910-abcd0123
+      BucketName: !Join
+        - "-"
+        - - !Sub ${ConfigBucketName}-${AWS::AccountId}
+          - !Select [0, !Split ["-", !Select [2, !Split ["/", !Ref AWS::StackId ]]]]
+  ConfigBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ConfigBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AWSConfigBucketPermissionsCheck
+            Effect: Allow
+            Principal:
+              Service:
+                - config.amazonaws.com
+            Action: s3:GetBucketAcl
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${ConfigBucket}
+          - Sid: AWSConfigBucketDelivery
+            Effect: Allow
+            Principal:
+              Service:
+                - config.amazonaws.com
+            Action: s3:PutObject
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${ConfigBucket}/AWSLogs/${AWS::AccountId}/*
+          - Sid: AWSConfigBucketSecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action:
+              - s3:*
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${ConfigBucket}
+              - !Sub arn:${AWS::Partition}:s3:::${ConfigBucket}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+
+  # -------------------------------------
+  # SNS Topic
+  # -------------------------------------
+  ConfigTopic:
+    Condition: CreateTopic
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: ai-config
+      DisplayName: ai-config
+      KmsMasterKeyId: !Ref KMSKeyAliasName
+  ConfigTopicPolicy:
+    Condition: CreateTopic
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: AWSConfigSNSPolicy
+            Effect: Allow
+            Principal:
+              Service:
+                - config.amazonaws.com
+            Action:
+              - sns:Publish
+            Resource: !Ref ConfigTopic
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+      Topics:
+        - !Ref ConfigTopic
+
+  # -------------------------------------
+  # AWS Config
+  # -------------------------------------
+  ConfigRecorderRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - config.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AWS_ConfigRole
+  ConfigRecorder:
+    Type: AWS::Config::ConfigurationRecorder
+    DependsOn:
+      - ConfigBucketPolicy
+    Properties:
+      RoleARN: !GetAtt ConfigRecorderRole.Arn
+      RecordingGroup:
+        AllSupported: !Ref EnableAllSupported
+        # Config のグローバルリソース記録を ap-northeast-1 のみ有効にする
+        IncludeGlobalResourceTypes: !If
+          - IncludeGlobalResourceRegion
+          - true
+          - false
+        ResourceTypes: !If
+          - IsEnableAllSupported
+          - !Ref AWS::NoValue
+          - !Ref ResourceTypes
+  ConfigDeliveryChannel:
+    Type: AWS::Config::DeliveryChannel
+    DependsOn: ConfigBucketPolicy
+    Properties:
+      Name: !If
+        - IsGeneratedDeliveryChannelName
+        - !Ref AWS::NoValue
+        - !Ref DeliveryChannelName
+      ConfigSnapshotDeliveryProperties:
+        DeliveryFrequency: !FindInMap
+          - Settings
+          - FrequencyMap
+          - !Ref Frequency
+      S3BucketName: !Ref ConfigBucket
+      SnsTopicARN: !If
+        - CreateTopic
+        - !Ref ConfigTopic
+        - !Ref ConfigTopicArn
