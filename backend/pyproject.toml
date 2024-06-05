@@ -27,7 +27,7 @@ pycurl = "^7.45.2"
 pydantic = "^1.10.6"
 python = "^3.11"
 redis = "^5.0.0"
-requests = "^2.31.0"
+requests = "^2.32.0"
 toml = "^0.10.2"
 
 [tool.poetry.group.dev.dependencies]
