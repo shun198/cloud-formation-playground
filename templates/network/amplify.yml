@@ -140,7 +140,7 @@ Resources:
       BuildSpec: |
         version: 1
         applications:
-          - appRoot: application
+          - appRoot: frontend
             frontend:
               phases:
                 preBuild:
