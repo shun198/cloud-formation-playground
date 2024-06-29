@@ -135,7 +135,7 @@ Resources:
   Route53IPAddressWhitelist:
     Type: AWS::WAFv2::IPSet
     Properties:
-      Name: !Sub Route53IPAddressWhitelist
+      Name: !Sub Route53IPAddressWhitelist-${ProjectName}-${Environment}
       Description: "This List of IP addresses that are used for AWS Route53 Health Checks."
       Scope: CLOUDFRONT
       IPAddressVersion: IPV4
@@ -199,7 +199,7 @@ Resources:
         CloudWatchLoggingOptions:
           Enabled: true
           LogGroupName: /aws/kinesisfirehose/s3-delivery-stream
-          LogStreamName: s3-delivery-waf-cf-${CloudFrontDistributionID}
+          LogStreamName: !Sub s3-delivery-waf-cf-${CloudFrontDistributionID}
       Tags:
         - Key: ProjectName
           Value: !Ref ProjectName
