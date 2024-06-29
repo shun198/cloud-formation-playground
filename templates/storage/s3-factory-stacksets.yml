@@ -102,4 +102,3 @@ Outputs:
     Value: !Ref LambdaArchiveBucket
   LambdaArchiveBucketArn:
     Value: !GetAtt  LambdaArchiveBucket.Arn
-

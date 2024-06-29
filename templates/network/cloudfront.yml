@@ -191,7 +191,7 @@ Resources:
           var request = event.request;
           var headers = request.headers;
           // echo -n user:pass | base64
-          var authString = "Basic QWJjMDEyMzpBYmMwMTIz";
+          var authString = "Basic dGVzdDpUZXN0MDEyMzQ1Njc4";
           if (
             typeof headers.authorization === "undefined" ||
             headers.authorization.value !== authString
