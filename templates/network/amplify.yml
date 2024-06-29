@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: "Amplify Admin Frontend Hosting Stack"
+Description: "Amplify Frontend Hosting Stack"
 
 # -------------------------------------
 # Metadata
@@ -47,6 +47,7 @@ Parameters:
       - dev
       - stg
       - prd
+    ConstraintDescription: "Environment must be select"
   GitHubAccessToken:
     Description: "Enter the Github personal access token. (ex: ghp_xxxxxxxxxx)"
     Type: String
@@ -73,18 +74,18 @@ Parameters:
       - WEB_COMPUTE
       - WEB_DYNAMIC
   AmplifyBasicUserName:
-    Description: "Enter the Amplify basic auth username"
+    Description: "Enter the Amplify basic auth username."
     Type: String
     MinLength: 1
     MaxLength: 255
-    ConstraintDescription: "AmplifyBasicUserName must be 1 to 225 characters"
+    ConstraintDescription: "AmplifyBasicUserName must be 1 to 225 characters."
   AmplifyBasicPassword:
-    Description: "Enter the Amplify basic auth password"
+    Description: "Enter the Amplify basic auth password."
     Type: String
     NoEcho: true
     MinLength: 7
     MaxLength: 255
-    ConstraintDescription: "AmplifyBasicPassword must be 7 to 225 characters"
+    ConstraintDescription: "AmplifyBasicPassword must be 7 to 225 characters."
   APIURL:
     Description: "Enter the API URL for backend. (ex: https://api.shun-practice.com)"
     Type: String
@@ -110,7 +111,7 @@ Resources:
   AmplifyFrontHosting:
     Type: AWS::Amplify::App
     Properties:
-      Name: !Sub ${ProjectName}-${Environment}-admin-front-amplify
+      Name: !Sub ${ProjectName}-${Environment}-front-amplify
       # GitHubにアクセスするために必要
       AccessToken: !Ref GitHubAccessToken
       Repository: !Ref GitHubRepoURL
@@ -144,6 +145,9 @@ Resources:
               phases:
                 preBuild:
                   commands:
+                    - curl https://get.volta.sh | bash
+                    - source ~/.bash_profile
+                    - volta install node
                     - npm ci
                 build:
                   commands:

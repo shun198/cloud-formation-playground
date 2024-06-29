@@ -1,0 +1,207 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Frontend Stack (CloudFront, Amplify)"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "CloudFormation Configuration"
+        Parameters:
+          - CloudFrontTemplateURL
+          - AmplifyTemplateURL
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "CloudFront Configuration"
+        Parameters:
+          - HostZoneID
+          - DomainName
+          - ACMPublicCertificateArn
+          - CachePolicy
+          - ResponseHeadersPolicy
+          - WebACLArn
+      - Label:
+          default: "Amplify Configuration"
+        Parameters:
+          - GitHubAccessToken
+          - GitHubRepoURL
+          - SourceBranchName
+          - AmplifySubDomainPrefix
+          - AmplifyPlatform
+          - AmplifyBasicUserName
+          - AmplifyBasicPassword
+          - APIURL
+          - FetchCredential
+          - ALBHeaderAuthName
+          - ALBHeaderAuthValue
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  # -------------------------------------
+  # CloudFormation
+  # -------------------------------------
+  CloudFrontTemplateURL:
+    Description: "Enter the CloudFront template object URL in S3 bucket"
+    Type: String
+  AmplifyTemplateURL:
+    Description: "Enter the Amplify template object URL in S3 bucket"
+    Type: String
+  # -------------------------------------
+  # Project
+  # -------------------------------------
+  ProjectName:
+    Description: "Enter the project name. (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter."
+    Default: my-project
+  Environment:
+    Description: "Select the environment."
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment must be select"
+  # -------------------------------------
+  # CloudFront
+  # -------------------------------------
+  HostZoneID:
+    Description: "Select the Route 53 Hosted Zone ID"
+    Type: AWS::Route53::HostedZone::Id
+  DomainName:
+    Description: "Enter the cloudfront domain name (Alias) (ex: shun-practice.com)"
+    Type: String
+  ACMPublicCertificateArn:
+    Description: "Enter the ACM public certificate ARN for global region"
+    Type: String
+  CachePolicy:
+    Description: "Select the CloudFront cache policy"
+    Type: String
+    Default: CachingDisabled
+    AllowedValues:
+      - CachingOptimized
+      - CachingDisabled
+      - CachingOptimizedForUncompressedObjects
+      - Elemental-MediaPackage
+      - Amplify
+  ResponseHeadersPolicy:
+    Description: "Select the CloudFront response headers policy"
+    Type: String
+    Default: SecurityHeadersPolicy
+    AllowedValues:
+      - CORS-and-SecurityHeadersPolicy
+      - CORS-With-Preflight
+      - CORS-with-preflight-and-SecurityHeadersPolicy
+      - SecurityHeadersPolicy
+      - SimpleCORS
+  WebACLArn:
+    Description: "Enter the ARN of the WAFv2 to apply to CloudFront. (ex: arn:aws:wafv2:us-east-1:012345678910:global/webacl/example/xxxxx)"
+    Type: String
+  # -------------------------------------
+  # Amplify
+  # -------------------------------------
+  GitHubAccessToken:
+    Description: "Enter the Github personal access token. (ex: ghp_xxxxxxxxxx)"
+    Type: String
+    NoEcho: true
+  GitHubRepoURL:
+    Description: "Enter the Github repository URL."
+    Type: String
+  SourceBranchName:
+    Description: "Enter the source branch name in GitHub frontend repository. (ex: main)"
+    Type: String
+  AmplifyDomainName:
+    Description: "Enter the custom Amplify domain name. (Alias) (ex: shun-practice.com)"
+    Type: String
+  AmplifySubDomainPrefix:
+    Description: "Enter the custom Amplify domain name subdomain prefix. (ex: amplify)"
+    Type: String
+  # SSRを使用する際はWEB_COMPUTEを選択
+  AmplifyPlatform:
+    Description: "Select the Amplify app platform. (when using SSR: WEB_COMPUTE)"
+    Type: String
+    Default: WEB_COMPUTE
+    AllowedValues:
+      - WEB
+      - WEB_COMPUTE
+      - WEB_DYNAMIC
+  AmplifyBasicUserName:
+    Description: "Enter the Amplify basic auth username"
+    Type: String
+    MinLength: 1
+    MaxLength: 255
+    ConstraintDescription: "AmplifyBasicUserName must be 1 to 225 characters"
+  AmplifyBasicPassword:
+    Description: "Enter the Amplify basic auth password"
+    Type: String
+    NoEcho: true
+    MinLength: 7
+    MaxLength: 255
+    ConstraintDescription: "AmplifyBasicPassword must be 7 to 225 characters"
+  APIURL:
+    Description: "Enter the API URL for backend. (ex: https://api.shun-practice.com)"
+    Type: String
+  FetchCredential:
+    Description: "Enter the auth settings for API fetch from frontend."
+    Type: String
+    Default: include
+  ALBHeaderAuthName:
+    Description: "Enter the ALB header auth name. (ex: X-Auth-ALB)"
+    Type: String
+  ALBHeaderAuthValue:
+    Description: "Enter the ALB header auth value."
+    Type: String
+Resources:
+  # -------------------------------------
+  # CloudFront Stack
+  # -------------------------------------
+  CloudFrontStack:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref CloudFrontTemplateURL
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        HostZoneID: !Ref HostZoneID
+        DomainName: !Ref DomainName
+        ACMPublicCertificateArn: !Ref ACMPublicCertificateArn
+        AmplifyURL: !GetAtt AmplifyStack.Outputs.AmplifyCustomDomainURL
+        AuthHeaderValue: !GetAtt AmplifyStack.Outputs.AmplifyBasicAuthCredentials
+        CachePolicy: !Ref CachePolicy
+        ResponseHeadersPolicy: !Ref ResponseHeadersPolicy
+        WebACLArn: !Ref WebACLArn
+  # -------------------------------------
+  # Amplify Stack
+  # -------------------------------------
+  AmplifyStack:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref AmplifyTemplateURL
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        GitHubAccessToken: !Ref GitHubAccessToken
+        GitHubRepoURL: !Ref GitHubRepoURL
+        SourceBranchName: !Ref SourceBranchName
+        AmplifyDomainName: !Ref DomainName
+        AmplifySubDomainPrefix: !Ref AmplifySubDomainPrefix
+        AmplifyPlatform: !Ref AmplifyPlatform
+        AmplifyBasicUserName: !Ref AmplifyBasicUserName
+        AmplifyBasicPassword: !Ref AmplifyBasicPassword
+        APIURL: !Ref APIURL
+        FetchCredential: !Ref FetchCredential
+        ALBHeaderAuthName: !Ref ALBHeaderAuthName
+        ALBHeaderAuthValue: !Ref ALBHeaderAuthValue

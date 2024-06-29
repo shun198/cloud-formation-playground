@@ -47,6 +47,7 @@ Metadata:
           default: "Route 53 Configuration"
         Parameters:
           - HostZoneID
+          - DomainName
       - Label:
           default: "CloudFront Configuration"
         Parameters:
@@ -55,7 +56,7 @@ Metadata:
           - AmplifyURL
           - CachePolicy
           - ResponseHeadersPolicy
-          - AssetsBucketDomainName
+          - WebACLArn
 
 # -------------------------------------
 # Parameters
@@ -115,9 +116,9 @@ Parameters:
       - CORS-with-preflight-and-SecurityHeadersPolicy
       - SecurityHeadersPolicy
       - SimpleCORS
-  # WebACLArn:
-  #   Description: "Enter the ARN of the WAFv2 to apply to CloudFront (ex: arn:aws:wafv2:us-east-1:012345678910:global/webacl/example/xxxxx)"
-  #   Type: String
+  WebACLArn:
+    Description: "Enter the ARN of the WAFv2 to apply to CloudFront (ex: arn:aws:wafv2:us-east-1:012345678910:global/webacl/example/xxxxx)"
+    Type: String
 
 
 # -------------------------------------
@@ -176,9 +177,10 @@ Resources:
         Aliases:
           - !Ref DomainName
         IPV6Enabled: false
-        # WebACLId: !Ref WebACLArn
+        WebACLId: !Ref WebACLArn
 
   # For CloudFront Functions
+  # https://dev.classmethod.jp/articles/apply-basic-authentication-password-with-cloudfront-functions/
   CloudFrontFunctionForBasicAuth:
     Type: AWS::CloudFront::Function
     Properties:

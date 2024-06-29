@@ -49,7 +49,6 @@ function UserList() {
       } else if (response.status === 401 || response.status === 403) {
         setLoggedIn(false);
         console.log(response.status)
-        console.log("fetchActiveが401か403")
         router.push("/"); // ログインしていない場合にルートページにリダイレクト
       } else if (response.status === 404) {
         router.replace("/404"); // IDが存在しない場合は404ページへリダイレクト
@@ -121,7 +120,7 @@ function UserList() {
           const msg = data.msg;
           alert(msg);
         });
-      } else if (response.status === 401 || 403) {
+      } else if (response.status === 401 || response.status === 403) {
         setLoggedIn(false);
       } else if (response.status === 400) {
         setLoggedIn(true);
