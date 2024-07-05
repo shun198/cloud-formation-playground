@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Managed Prefix List for my-project"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+      - Label:
+          default: "Managed Prefix List Configuration"
+        Parameters:
+          - UserA
+          - UserB
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter"
+    Default: my-project
+  UserA:
+    Description: "Enter the IP addresses for UserA (ex: 0.0.0.0/32)"
+    Type: String
+  UserB:
+    Description: "Enter the IP addresses for UserB (ex: 1.1.1.1/32)"
+    Type: String
+
+Resources:
+  # -------------------------------------
+  # Managed Prefix List
+  # -------------------------------------
+  PrefixList:
+    Type: AWS::EC2::PrefixList
+    Properties:
+      PrefixListName: "IP Address Lists For Remote Developers"
+      AddressFamily: "IPv4"
+      MaxEntries: 10
+      Entries:
+        - Cidr: !Ref UserA
+          Description: "UserA Remote User IP List"
+        - Cidr: !Ref UserB
+          Description: "UserB Remote User IP List"
+      Tags:
+        - Key: ProjectName
+          Value: !Ref ProjectName
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  PrefixList:
+    Value: !Ref PrefixList
