@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: ACM Certificate Stack
+Mappings:
+  DomainsMap:
+    Environment:
+      dev: shun-practice.com
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Project Configuration
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: Route 53 Configuration
+        Parameters:
+          - HostZoneID
+Parameters:
+  ProjectName:
+    Description: 'Enter the project name. (ex: my-project)'
+    Type: String
+    MinLength: 1
+    ConstraintDescription: ProjectName must be enter.
+    Default: my-project
+  Environment:
+    Description: Select the environment.
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: Environment must be select.
+  HostZoneID:
+    Description: Enter the Route 53 Hosted Zone ID.
+    Type: AWS::Route53::HostedZone::Id
+Resources:
+  ACMPublicCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !FindInMap
+        - DomainsMap
+        - Environment
+        - !Ref Environment
+      DomainValidationOptions:
+        - DomainName: !FindInMap
+            - DomainsMap
+            - Environment
+            - !Ref Environment
+          HostedZoneId: !Ref HostZoneID
+      SubjectAlternativeNames:
+        - !Sub
+          - '*.${DomainName}'
+          - DomainName: !FindInMap
+              - DomainsMap
+              - Environment
+              - !Ref Environment
+      ValidationMethod: DNS
+      Tags:
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+Outputs:
+  ACMPublicCertificateArn:
+    Value: !Ref ACMPublicCertificate
+  TargetDomainName:
+    Value: !FindInMap
+      - DomainsMap
+      - Environment
+      - !Ref Environment
