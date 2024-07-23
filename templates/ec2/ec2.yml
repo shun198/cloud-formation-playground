@@ -20,10 +20,10 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /cfn-pg/INSTANCE_TYPE
 
-Resources: 
-  DevEC2Instance: 
+Resources:
+  DevEC2Instance:
     Type: 'AWS::EC2::Instance'
-    Properties: 
+    Properties:
       # image名が見つからないエラーが発生したらコンソール上のリージョンを確認すること
       ImageId: ami-08c84d37db8aafe00
       InstanceType: !Ref MyInstanceType
