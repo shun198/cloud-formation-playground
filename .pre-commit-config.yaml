@@ -4,4 +4,4 @@ repos:
     rev: v1.8.2 # The version of cfn-lint to use
     hooks:
       - id: cfn-lint
-        files: templates/security/.*\.(json|yml|yaml)$
+        files: templates/network/.*\.(json|yml|yaml)$
