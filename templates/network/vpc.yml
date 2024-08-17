@@ -20,8 +20,8 @@ Metadata:
           - VPCCIDR
           - ALBPublicSubnet1CIDR
           - ALBPublicSubnet2CIDR
-          - NATGatewayPublicSubnet1CIDR
-          - NATGatewayPublicSubnet2CIDR
+          - NATPublicSubnet1CIDR
+          - NATPublicSubnet2CIDR
           - ECSProtectedSubnet1CIDR
           - ECSProtectedSubnet2CIDR
           - LambdaProtectedSubnet1CIDR
@@ -30,6 +30,9 @@ Metadata:
           - InternalALBPrivateSubnet2CIDR
           - RDSPrivateSubnet1CIDR
           - RDSPrivateSubnet2CIDR
+      - Label:
+          default: "VPC FlowLogs Configuration"
+        Parameters:
           - VPCFlowLogsRetentionInDays
 
 # -------------------------------------
@@ -37,69 +40,71 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name (ex: my-project)"
+    Description: "Enter the project name. (ex: my-project)"
     Type: String
-    MinLength: 1
-    ConstraintDescription: "ProjectName must be enter"
     Default: my-project
+    ConstraintDescription: "ProjectName must be entered."
+    MinLength: 1
   Environment:
-    Description: "Select the environment"
+    Description: "Select the environment name."
     Type: String
+    Default: dev
     AllowedValues:
       - dev
       - stg
       - prd
-    ConstraintDescription: "Environment must be select"
+    ConstraintDescription: "Environment name must be selected."
   AvailabilityZone1:
-    Description: "Enter the 1st Availability Zone name"
+    Description: "Enter the 1st Availability Zone name."
     Type: String
     Default: ap-northeast-1a
   AvailabilityZone2:
-    Description: "Enter the 2nd Availability Zone name"
+    Description: "Enter the 2nd Availability Zone name."
     Type: String
     Default: ap-northeast-1c
   VPCCIDR:
-    Description: "Enter the VPC CIDR block"
+    Description: "Enter the VPC CIDR block."
     Type: String
   ALBPublicSubnet1CIDR:
-    Description: "Enter the Subnet CIDR block for ALB in the 1st Availability Zone"
+    Description: "Enter the Subnet CIDR block for ALB in the 1st Availability Zone."
     Type: String
   ALBPublicSubnet2CIDR:
-    Description: "Enter the Subnet CIDR block for ALB in the 2nd Availability Zone"
+    Description: "Enter the Subnet CIDR block for ALB in the 2nd Availability Zone."
     Type: String
-  NATGatewayPublicSubnet1CIDR:
-    Description: "Enter the Subnet CIDR block for NAT Gateway in the 1st Availability Zone"
+  NATPublicSubnet1CIDR:
+    Description: "Enter the Subnet CIDR block for NAT Gateway in the 1st Availability Zone."
     Type: String
-  NATGatewayPublicSubnet2CIDR:
-    Description: "Enter the Subnet CIDR block for NAT Gateway in the 2nd Availability Zone"
+  NATPublicSubnet2CIDR:
+    Description: "Enter the Subnet CIDR block for NAT Gateway in the 2nd Availability Zone."
     Type: String
   ECSProtectedSubnet1CIDR:
-    Description: "Enter the Subnet CIDR block for ECS in the 1st Availability Zone"
+    Description: "Enter the Subnet CIDR block for ECS in the 1st Availability Zone."
     Type: String
   ECSProtectedSubnet2CIDR:
-    Description: "Enter the Subnet CIDR block for ECS in the 2nd Availability Zone"
+    Description: "Enter the Subnet CIDR block for ECS in the 2nd Availability Zone."
     Type: String
   LambdaProtectedSubnet1CIDR:
-    Description: "Enter the Subnet CIDR block for Lambda in the 1st Availability Zone"
+    Description: "Enter the Subnet CIDR block for Lambda in the 1st Availability Zone."
     Type: String
   LambdaProtectedSubnet2CIDR:
-    Description: "Enter the Subnet CIDR block for Lambda in the 2nd Availability Zone"
+    Description: "Enter the Subnet CIDR block for Lambda in the 2nd Availability Zone."
     Type: String
   InternalALBPrivateSubnet1CIDR:
-    Description: "Enter the Subnet CIDR block for Internal ALB in the 1st Availability Zone"
+    Description: "Enter the Subnet CIDR block for Internal ALB in the 1st Availability Zone."
     Type: String
   InternalALBPrivateSubnet2CIDR:
-    Description: "Enter the Subnet CIDR block for Internal ALB in the 2nd Availability Zone"
+    Description: "Enter the Subnet CIDR block for Internal ALB in the 2nd Availability Zone."
     Type: String
   RDSPrivateSubnet1CIDR:
-    Description: "Enter the Subnet CIDR block for RDS in the 1st Availability Zone"
+    Description: "Enter the Subnet CIDR block for RDS in the 1st Availability Zone."
     Type: String
   RDSPrivateSubnet2CIDR:
-    Description: "Enter the Subnet CIDR block for RDS in the 2nd Availability Zone"
+    Description: "Enter the Subnet CIDR block for RDS in the 2nd Availability Zone."
     Type: String
   VPCFlowLogsRetentionInDays:
-    Description: "Enter the data retention for VPC FlowLogs with CW Logs (ex: 30)"
-    Type: Number
+    Description: "Enter the data retention period for VPC FlowLogs. (ex: 30)"
+    Type: String
+    Default: 30
 
 # -------------------------------------
 # Conditions
@@ -118,8 +123,8 @@ Resources:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: !Ref VPCCIDR
-      EnableDnsSupport: true
       EnableDnsHostnames: true
+      EnableDnsSupport: true
       Tags:
         - Key: Name
           Value: !Sub ${ProjectName}-${Environment}-vpc
@@ -127,22 +132,6 @@ Resources:
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
-  InternetGateway:
-    Type: AWS::EC2::InternetGateway
-    Properties:
-      Tags:
-        - Key: Name
-          Value: !Sub ${ProjectName}-${Environment}-igw
-        - Key: ProjectName
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref Environment
-  InternetGatewayAttachment:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      InternetGatewayId: !Ref InternetGateway
-      VpcId: !Ref VPC
-
   # -------------------------------------
   # VPC FlowLogs
   # -------------------------------------
@@ -186,8 +175,7 @@ Resources:
                   - logs:PutLogEvents
                   - logs:DescribeLogGroups
                   - logs:DescribeLogStreams
-                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/vpc/flowlogs/${ProjectName}-${Environment}-vpc:*
-
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/vpc/flowlogs/${ProjectName}/${Environment}:*
   # For S3
   VPCFlowLogToS3:
     DependsOn: VPCFlowLogBucket
@@ -204,7 +192,7 @@ Resources:
       BucketName: !Sub ${ProjectName}-${Environment}-vpc-flowlogs
       OwnershipControls:
         Rules:
-          - ObjectOwnership: ObjectWriter
+          - ObjectOwnership: BucketOwnerPreferred
       AccessControl: LogDeliveryWrite
       BucketEncryption:
         ServerSideEncryptionConfiguration:
@@ -227,15 +215,33 @@ Resources:
             ExpirationInDays: 1825
 
   # -------------------------------------
+  # Internet Gateway
+  # -------------------------------------
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${Environment}-igw
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+  # -------------------------------------
   # Public Subnets
   # -------------------------------------
   # For ALB
   ALBPublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: !Ref ALBPublicSubnet1CIDR
-      VpcId: !Ref VPC
       AvailabilityZone: !Ref AvailabilityZone1
+      VpcId: !Ref VPC
+      CidrBlock: !Ref ALBPublicSubnet1CIDR
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
@@ -243,7 +249,7 @@ Resources:
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-pub-alb"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone1]]]]
+              - !Select [2, !Split ["-", !Ref AvailabilityZone1]]
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
@@ -251,28 +257,28 @@ Resources:
   ALBPublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: !Ref ALBPublicSubnet2CIDR
-      VpcId: !Ref VPC
       AvailabilityZone: !Ref AvailabilityZone2
+      VpcId: !Ref VPC
+      CidrBlock: !Ref ALBPublicSubnet2CIDR
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
           # output-image: my-project-dev-pub-alb-1c
-          Value: !Join
+          Value: !Join 
             - "-"
             - - !Sub "${ProjectName}-${Environment}-pub-alb"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone2]]]]
+              - !Select [2, !Split ["-", !Ref AvailabilityZone2]]
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
   # For NAT Gateway
-  NATGatewayPublicSubnet1:
+  NATPublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: !Ref NATGatewayPublicSubnet1CIDR
-      VpcId: !Ref VPC
       AvailabilityZone: !Ref AvailabilityZone1
+      VpcId: !Ref VPC
+      CidrBlock: !Ref NATPublicSubnet1CIDR
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
@@ -280,17 +286,17 @@ Resources:
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-pub-natgw"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone1]]]]
+              - !Select [2, !Split ["-", !Ref AvailabilityZone1]]
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
-  NATGatewayPublicSubnet2:
+  NATPublicSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: !Ref NATGatewayPublicSubnet2CIDR
-      VpcId: !Ref VPC
       AvailabilityZone: !Ref AvailabilityZone2
+      VpcId: !Ref VPC
+      CidrBlock: !Ref NATPublicSubnet2CIDR
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
@@ -298,12 +304,11 @@ Resources:
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-pub-natgw"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone2]]]]
+              - !Select [2, !Split ["-", !Ref AvailabilityZone2]]
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
-
   # -------------------------------------
   # Protected Subnets
   # -------------------------------------
@@ -311,9 +316,9 @@ Resources:
   ECSProtectedSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: !Ref ECSProtectedSubnet1CIDR
-      VpcId: !Ref VPC
       AvailabilityZone: !Ref AvailabilityZone1
+      VpcId: !Ref VPC
+      CidrBlock: !Ref ECSProtectedSubnet1CIDR
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
@@ -321,7 +326,7 @@ Resources:
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-prot-ecs"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone1]]]]
+              - !Select [2, !Split ["-", !Ref AvailabilityZone1]]
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
@@ -329,9 +334,9 @@ Resources:
   ECSProtectedSubnet2:
     Type: AWS::EC2::Subnet
     Properties:
-      CidrBlock: !Ref ECSProtectedSubnet2CIDR
-      VpcId: !Ref VPC
       AvailabilityZone: !Ref AvailabilityZone2
+      VpcId: !Ref VPC
+      CidrBlock: !Ref ECSProtectedSubnet2CIDR
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
@@ -339,7 +344,7 @@ Resources:
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-prot-ecs"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone2]]]]
+              - !Select [2, !Split ["-", !Ref AvailabilityZone2]]
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
@@ -358,7 +363,7 @@ Resources:
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-prot-lambda"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone1]]]]
+              - !Select [2, !Split ["-", !Ref AvailabilityZone1]]
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
@@ -376,15 +381,51 @@ Resources:
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-prot-lambda"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone2]]]]
+              - !Select [2, !Split ["-", !Ref AvailabilityZone2]]
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
-
   # -------------------------------------
   # Private Subnets
   # -------------------------------------
+  # For RDS
+  RDSPrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone1
+      VpcId: !Ref VPC
+      CidrBlock: !Ref RDSPrivateSubnet1CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          # output-image: my-project-dev-priv-rds-1a
+          Value: !Join
+            - "-"
+            - - !Sub "${ProjectName}-${Environment}-priv-rds"
+              - !Select [2, !Split ["-", !Ref AvailabilityZone1]]
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  RDSPrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone2
+      VpcId: !Ref VPC
+      CidrBlock: !Ref RDSPrivateSubnet2CIDR
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          # output-image: my-project-dev-priv-rds-1c
+          Value: !Join
+            - "-"
+            - - !Sub "${ProjectName}-${Environment}-priv-rds"
+              - !Select [2, !Split ["-", !Ref AvailabilityZone2]]
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
   # For Internal ALB
   InternalALBPrivateSubnet1:
     Type: AWS::EC2::Subnet
@@ -422,44 +463,6 @@ Resources:
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
-  # For RDS
-  RDSPrivateSubnet1:
-    Type: AWS::EC2::Subnet
-    Properties:
-      CidrBlock: !Ref RDSPrivateSubnet1CIDR
-      VpcId: !Ref VPC
-      AvailabilityZone: !Ref AvailabilityZone1
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: Name
-          # output-image: my-project-dev-priv-rds-1a
-          Value: !Join
-            - "-"
-            - - !Sub "${ProjectName}-${Environment}-priv-rds"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone1]]]]
-        - Key: ProjectName
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref Environment
-  RDSPrivateSubnet2:
-    Type: AWS::EC2::Subnet
-    Properties:
-      CidrBlock: !Ref RDSPrivateSubnet2CIDR
-      VpcId: !Ref VPC
-      AvailabilityZone: !Ref AvailabilityZone2
-      MapPublicIpOnLaunch: false
-      Tags:
-        - Key: Name
-          # output-image: my-project-dev-priv-rds-1c
-          Value: !Join
-            - "-"
-            - - !Sub "${ProjectName}-${Environment}-priv-rds"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone2]]]]
-        - Key: ProjectName
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref Environment
-
   # -------------------------------------
   # Public Route Tables
   # -------------------------------------
@@ -469,41 +472,40 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-${Environment}-public-rtb
+          Value: !Sub ${ProjectName}-${Environment}-pub-rtb
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
   PublicRoute:
     Type: AWS::EC2::Route
-    DependsOn: InternetGatewayAttachment
+    DependsOn: AttachGateway
     Properties:
       RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
   # For ALB
-  ALBPublicSubnet1Association:
+  ALBPublicSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref ALBPublicSubnet1
       RouteTableId: !Ref PublicRouteTable
-  ALBPublicSubnet2Association:
+  ALBPublicSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref ALBPublicSubnet2
       RouteTableId: !Ref PublicRouteTable
   # For NAT Gateway
-  NATGatewayPublicSubnet1Association:
+  NATPublicSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref NATGatewayPublicSubnet1
+      SubnetId: !Ref NATPublicSubnet1
       RouteTableId: !Ref PublicRouteTable
-  NATGatewayPublicSubnet2Association:
+  NATPublicSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref NATGatewayPublicSubnet2
+      SubnetId: !Ref NATPublicSubnet2
       RouteTableId: !Ref PublicRouteTable
-
   # -------------------------------------
   # Protected Route Tables
   # -------------------------------------
@@ -513,56 +515,69 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          # output-image: my-project-dev-protected-rtb-1a
+          # output-image: my-project-dev-prot-rtb-1a
           Value: !Join
             - "-"
-            - - !Sub "${ProjectName}-${Environment}-protected-rtb"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone1]]]]
+            - - !Sub ${ProjectName}-${Environment}-prot-rtb
+              - !Select [2, !Split ["-", !Ref AvailabilityZone1]]
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
-  # For ECS
-  ECSProtectedSubnet1Association:
-    Type: AWS::EC2::SubnetRouteTableAssociation
+  ProtectedRoute1:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
     Properties:
-      SubnetId: !Ref ECSProtectedSubnet1
       RouteTableId: !Ref ProtectedRouteTable1
-  # For Lambda
-  LambdaProtectedSubnet1Association:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref LambdaProtectedSubnet1
-      RouteTableId: !Ref ProtectedRouteTable1
-
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway1
   ProtectedRouteTable2:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          # output-image: my-project-dev-protected-rtb-1c
+          # output-image: my-project-dev-prot-rtb-1c
           Value: !Join
             - "-"
-            - - !Sub "${ProjectName}-${Environment}-protected-rtb"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone2]]]]
+            - - !Sub ${ProjectName}-${Environment}-prot-rtb
+              - !Select [2, !Split ["-", !Ref AvailabilityZone2]]
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
+  ProtectedRoute2:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref ProtectedRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !If
+        - IsPrdEnv
+        - !Ref NATGateway2
+        - !Ref NATGateway1
   # For ECS
-  ECSProtectedSubnet2Association:
+  ECSProtectedSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref ECSProtectedSubnet1
+      RouteTableId: !Ref ProtectedRouteTable1
+  ECSProtectedSubnet2RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref ECSProtectedSubnet2
       RouteTableId: !Ref ProtectedRouteTable2
   # For Lambda
+  LambdaProtectedSubnet1Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref LambdaProtectedSubnet1
+      RouteTableId: !Ref ProtectedRouteTable1
   LambdaProtectedSubnet2Association:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref LambdaProtectedSubnet2
       RouteTableId: !Ref ProtectedRouteTable2
-
   # -------------------------------------
   # Private Route Tables
   # -------------------------------------
@@ -572,11 +587,22 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-${Environment}-private-rtb
+          Value: !Sub ${ProjectName}-${Environment}-priv-rtb
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
+  # For RDS
+  RDSPrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref RDSPrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable
+  RDSPrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref RDSPrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable
   # For Internal ALB
   InternalALBPrivateSubnet1Association:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -588,37 +614,9 @@ Resources:
     Properties:
       SubnetId: !Ref InternalALBPrivateSubnet2
       RouteTableId: !Ref PrivateRouteTable
-  # For RDS
-  RDSPrivateSubnet1Association:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref RDSPrivateSubnet1
-      RouteTableId: !Ref PrivateRouteTable
-  RDSPrivateSubnet2Association:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref RDSPrivateSubnet2
-      RouteTableId: !Ref PrivateRouteTable
-
   # -------------------------------------
   # NAT Gateway
   # -------------------------------------
-  NATGateway1:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      AllocationId: !GetAtt NATGatewayEIP1.AllocationId
-      SubnetId: !Ref NATGatewayPublicSubnet1
-      Tags:
-        - Key: Name
-          # output-image: my-project-dev-natgw-1a
-          Value: !Join
-            - "-"
-            - - !Sub "${ProjectName}-${Environment}-natgw"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone1]]]]
-        - Key: ProjectName
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref Environment
   NATGatewayEIP1:
     Type: AWS::EC2::EIP
     Properties:
@@ -629,31 +627,30 @@ Resources:
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-natgw-eip"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone1]]]]
+              - !Select [2, !Split ["-", !Ref AvailabilityZone1]]
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
-  NATGateway2:
+  NATGateway1:
     Type: AWS::EC2::NatGateway
-    Condition: IsPrdEnv
     Properties:
-      AllocationId: !GetAtt NATGatewayEIP2.AllocationId
-      SubnetId: !Ref NATGatewayPublicSubnet2
+      AllocationId: !GetAtt NATGatewayEIP1.AllocationId
+      SubnetId: !Ref NATPublicSubnet1
       Tags:
         - Key: Name
-          # output-image: my-project-dev-natgw-1c
+          # output-image: my-project-dev-natgw-1a
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-natgw"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone2]]]]
+              - !Select [2, !Split ["-", !Ref AvailabilityZone1]]
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
   NATGatewayEIP2:
-    Type: AWS::EC2::EIP
     Condition: IsPrdEnv
+    Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
       Tags:
@@ -662,40 +659,24 @@ Resources:
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-natgw-eip"
-              - !Select [0, !Split ["-", !Select [2, !Split ["-", !Ref AvailabilityZone2]]]]
+              - !Select [2, !Split ["-", !Ref AvailabilityZone2]]
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
-  NATGatewayAssociationForProtectedRoute1:
-    Type: AWS::EC2::Route
+  NATGateway2:
+    Condition: IsPrdEnv
+    Type: AWS::EC2::NatGateway
     Properties:
-      RouteTableId: !Ref ProtectedRouteTable1
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NATGateway1
-  NATGatewayAssociationForProtectedRoute2:
-    Type: AWS::EC2::Route
-    Properties:
-      RouteTableId: !Ref ProtectedRouteTable2
-      DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !If
-        - IsPrdEnv
-        - !Ref NATGateway2
-        - !Ref NATGateway1
-
-  # -------------------------------------
-  # Security Group
-  # -------------------------------------
-  # インバウンドポートを許可しないセキュリティグループ
-  NoIngressSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: no-ingress-sg
-      GroupDescription: "Security group with no ingress rule"
-      VpcId: !Ref VPC
+      AllocationId: !GetAtt NATGatewayEIP2.AllocationId
+      SubnetId: !Ref NATPublicSubnet2
       Tags:
         - Key: Name
-          Value: no-ingress-sg
+          # output-image: my-project-dev-natgw-1c
+          Value: !Join
+            - "-"
+            - - !Sub "${ProjectName}-${Environment}-natgw"
+              - !Select [2, !Split ["-", !Ref AvailabilityZone2]]
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
@@ -705,45 +686,42 @@ Resources:
 # Outputs
 # -------------------------------------
 Outputs:
-  VPCID:
-    Description: "A reference to the created VPC ID"
+  VPC:
+    Description: "A reference to the created VPC."
     Value: !Ref VPC
   ALBPublicSubnet1:
-    Description: "A reference to the public subnet in the 1st Availability Zone"
+    Description: "A reference to the public subnet in the 1st Availability Zone."
     Value: !Ref ALBPublicSubnet1
   ALBPublicSubnet2:
-    Description: "A reference to the public subnet in the 2nd Availability Zone"
+    Description: "A reference to the public subnet in the 2nd Availability Zone."
     Value: !Ref ALBPublicSubnet2
-  NATGatewayPublicSubnet1:
-    Description: "A reference to the public subnet in the 1st Availability Zone"
-    Value: !Ref NATGatewayPublicSubnet1
-  NATGatewayPublicSubnet2:
-    Description: "A reference to the public subnet in the 2nd Availability Zone"
-    Value: !Ref NATGatewayPublicSubnet2
+  NATPublicSubnet1:
+    Description: "A reference to the public subnet in the 1st Availability Zone."
+    Value: !Ref NATPublicSubnet1
+  NATPublicSubnet2:
+    Description: "A reference to the public subnet in the 2nd Availability Zone."
+    Value: !Ref NATPublicSubnet2
   ECSProtectedSubnet1:
-    Description: "A reference to the protected subnet in the 1st Availability Zone"
+    Description: "A reference to the public subnet in the 1st Availability Zone."
     Value: !Ref ECSProtectedSubnet1
   ECSProtectedSubnet2:
-    Description: "A reference to the protected subnet in the 2nd Availability Zone"
+    Description: "A reference to the public subnet in the 2nd Availability Zone."
     Value: !Ref ECSProtectedSubnet2
   LambdaProtectedSubnet1:
-    Description: "A reference to the protected subnet in the 1st Availability Zone"
+    Description: "A reference to the protected subnet in the 1st Availability Zone."
     Value: !Ref LambdaProtectedSubnet1
   LambdaProtectedSubnet2:
-    Description: "A reference to the protected subnet in the 2nd Availability Zone"
+    Description: "A reference to the protected subnet in the 2nd Availability Zone."
     Value: !Ref LambdaProtectedSubnet2
+  RDSPrivateSubnet1:
+    Description: "A reference to the private subnet in the 1st Availability Zone."
+    Value: !Ref RDSPrivateSubnet1
+  RDSPrivateSubnet2:
+    Description: "A reference to the private subnet in the 2nd Availability Zone."
+    Value: !Ref RDSPrivateSubnet2
   InternalALBPrivateSubnet1:
     Description: "A reference to the private subnet in the 1st Availability Zone."
     Value: !Ref InternalALBPrivateSubnet1
   InternalALBPrivateSubnet2:
     Description: "A reference to the private subnet in the 2nd Availability Zone."
     Value: !Ref InternalALBPrivateSubnet2
-  RDSPrivateSubnet1:
-    Description: "A reference to the private subnet in the 1st Availability Zone"
-    Value: !Ref RDSPrivateSubnet1
-  RDSPrivateSubnet2:
-    Description: "A reference to the private subnet in the 2nd Availability Zone"
-    Value: !Ref RDSPrivateSubnet2
-  NoIngressSecurityGroup:
-    Description: "Security group with no ingress rule"
-    Value: !Ref NoIngressSecurityGroup

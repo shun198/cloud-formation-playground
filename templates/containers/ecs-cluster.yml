@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: 'ECS Cluster Stack'
+Description: "ECS Cluster Stack"
 
 # -------------------------------------
 # Metadata
@@ -8,34 +8,35 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: 'Project Configuration'
+          default: "Project Configuration"
         Parameters:
           - ProjectName
           - Environment
       - Label:
-          default: 'ECS Cluster Configuration'
+          default: "ECS Cluster Configuration"
         Parameters:
           - ContainerInsightsEnabled
 
 # -------------------------------------
-# Input parameters
+# Parameters
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: 'Enter the project name. (ex: my-project)'
+    Description: "Enter the project name. (ex: my-project)"
     Type: String
     Default: my-project
     MinLength: 1
-    ConstraintDescription: 'ProjectName must be enter.'
+    ConstraintDescription: "ProjectName must be entered."
   Environment:
-    Description: 'Select the environment.'
+    Description: "Select the environment name."
     Type: String
     AllowedValues:
       - dev
       - stg
       - prd
+    ConstraintDescription: "Environment name must be selected."
   ContainerInsightsEnabled:
-    Description: 'Select whether to enable ECS container insights.'
+    Description: "Select whether to enable ECS container insights."
     Type: String
     AllowedValues:
       - disabled
@@ -86,12 +87,11 @@ Resources:
         # ECSTaskExecutionRole が使用できるデフォルト権限
         - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
       RoleName: !Sub ECSTaskExecutionRole-${ProjectName}-${Environment}
-      Path: /service-role/
 
   ECSTaskExecutionRolePolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Sub ECSTaskExecutionRolePolicy-${ProjectName}-${Environment}
+      PolicyName: !Sub ECSTaskExecutionRoleAccess-${ProjectName}-${Environment}
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -108,7 +108,7 @@ Resources:
               - ecr:GetRepositoryPolicy
               - ecr:ListTagsForResource
             Resource:
-              - "*"
+              - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/*
           - Effect: Allow
             Action:
               # 環境変数の取得用
@@ -136,46 +136,51 @@ Resources:
               - sts:AssumeRole
       ManagedPolicyArns:
         # カスタムメトリクス出力用
-        # - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
         # CloudWatchEvents との連携用
-        # - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceEventsRole
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceEventsRole
       RoleName: !Sub ECSTaskRole-${ProjectName}-${Environment}
-      Path: /service-role/
 
-  # ECSTaskRolePolicy:
-  #   Type: AWS::IAM::Policy
-  #   Properties:
-  #     PolicyName: !Sub ECSTaskRolePolicy-${ProjectName}-${Environment}
-  #     PolicyDocument:
-  #       Version: 2012-10-17
-  #       Statement:
-  #         - Effect: Allow
-  #           Action:
-  #             # # EC2 参照
-  #             # - ec2:Describe*
-  #             # # ELB 参照
-  #             # - elasticloadbalancing:Describe*
-  #             # # AutoScaling 参照
-  #             # - autoscaling:Describe*
-  #             # CloudWatch 参照
-  #             - cloudwatch:ListMetrics
-  #             - cloudwatch:GetMetricStatistics
-  #             - cloudwatch:Describe*
-  #             # CloudWatch アラーム静観処理
-  #             - cloudwatch:DisableAlarmActions
-  #             - cloudwatch:EnableAlarmActions
-  #             # CloudWatch Logs ログ出力
-  #             - logs:CreateLogGroup
-  #             - logs:CreateLogStream
-  #             - logs:PutLogEvents
-  #             - logs:DescribeLogStreams
-  #           Resource: '*'
-  #     Roles:
-  #       - Ref: ECSTaskRole
+  ECSTaskRolePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ECSTaskRoleAccess-${ProjectName}-${Environment}
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              # EC2 参照
+              - ec2:Describe*
+              # ELB 参照
+              - elasticloadbalancing:Describe*
+              # AutoScaling 参照
+              - autoscaling:Describe*
+              # CloudWatch 参照
+              - cloudwatch:ListMetrics
+              - cloudwatch:GetMetricStatistics
+              - cloudwatch:Describe*
+              # CloudWatch アラーム静観処理
+              - cloudwatch:DisableAlarmActions
+              - cloudwatch:EnableAlarmActions
+              # CloudWatch Logs ログ出力
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+              # SES 経由のメール送信
+              - ses:SendRawEmail
+              - ses:SendEmail
+              - ses:GetSendQuota
+              # SNS 経由のメッセージ配信
+              - sns:Publish
+            Resource: "*"
+      Roles:
+        - Ref: ECSTaskRole
 
 # -------------------------------------
-# Output parameters
+# Outputs
 # -------------------------------------
 Outputs:
   ECSClusterName:

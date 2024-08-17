@@ -1,71 +1,112 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: ACM Certificate Stack
-Mappings:
-  DomainsMap:
-    Environment:
-      dev: shun-practice.com
+Description: "ACM Certificate Stack"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: Project Configuration
+          default: "Project Configuration"
         Parameters:
           - ProjectName
           - Environment
       - Label:
-          default: Route 53 Configuration
+          default: "Route 53 Configuration"
         Parameters:
+          - DomainName
+          - DomainNameForAdmin
           - HostZoneID
+          - HostZoneIDForAdmin
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
 Parameters:
   ProjectName:
-    Description: 'Enter the project name. (ex: my-project)'
+    Description: "Enter the project name. (ex: my-project)"
     Type: String
     MinLength: 1
-    ConstraintDescription: ProjectName must be enter.
+    ConstraintDescription: "ProjectName must be entered."
     Default: my-project
   Environment:
-    Description: Select the environment.
+    Description: "Select a environment name."
     Type: String
     AllowedValues:
       - dev
       - stg
       - prd
-    ConstraintDescription: Environment must be select.
+    ConstraintDescription: "Environment name must be selected."
+  DomainName:
+    Description: "Enter the domain name. (CNAME) (ex: dev.inquiry-pro.lifecard.co.jp)"
+    Type: String
+  DomainNameForAdmin:
+    Description: "Enter the admin domain name. (CNAME) (ex: dev.admin.inquiry-pro.lifecard.co.jp)"
+    Type: String
   HostZoneID:
-    Description: Enter the Route 53 Hosted Zone ID.
+    Description: "Enter the Route 53 Hosted Zone ID."
     Type: AWS::Route53::HostedZone::Id
+  HostZoneIDForAdmin:
+    Description: "Enter the admin Route 53 Hosted Zone ID."
+    Type: AWS::Route53::HostedZone::Id
+
+# -------------------------------------
+# Resources
+# -------------------------------------
 Resources:
+  # -------------------------------------
+  # ACM
+  # -------------------------------------
   ACMPublicCertificate:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: !FindInMap
-        - DomainsMap
-        - Environment
-        - !Ref Environment
+      DomainName: !Ref DomainName
       DomainValidationOptions:
-        - DomainName: !FindInMap
-            - DomainsMap
-            - Environment
-            - !Ref Environment
+        - DomainName: !Ref DomainName
           HostedZoneId: !Ref HostZoneID
       SubjectAlternativeNames:
-        - !Sub
-          - '*.${DomainName}'
-          - DomainName: !FindInMap
-              - DomainsMap
-              - Environment
-              - !Ref Environment
+        - !Sub "*.${DomainName}"
       ValidationMethod: DNS
       Tags:
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
+
+  ACMPublicCertificateForAdmin:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainNameForAdmin
+      DomainValidationOptions:
+        - DomainName: !Ref DomainNameForAdmin
+          HostedZoneId: !Ref HostZoneIDForAdmin
+      SubjectAlternativeNames:
+        - !Sub "*.${DomainNameForAdmin}"
+      ValidationMethod: DNS
+      Tags:
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
 Outputs:
   ACMPublicCertificateArn:
     Value: !Ref ACMPublicCertificate
-  TargetDomainName:
-    Value: !FindInMap
-      - DomainsMap
-      - Environment
-      - !Ref Environment
+  DomainName:
+    Value: !Ref DomainName
+  HostZoneID:
+    Value: !Ref HostZoneID
+  ACMPublicCertificateArnForAdmin:
+    Value: !Ref ACMPublicCertificateForAdmin
+  DomainNameForAdmin:
+    Value: !Ref DomainNameForAdmin
+  HostZoneIDForAdmin:
+    Value: !Ref HostZoneIDForAdmin

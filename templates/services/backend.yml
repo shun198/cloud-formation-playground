@@ -1,0 +1,246 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Backend Stack (CodePipeline, ECS Auto Scaling)"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    # パラメータの並び順
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "CloudFormation Configuration"
+        Parameters:
+          - CodePipelineTemplateURL
+          - ECSAutoScalingTemplateURL
+      - Label:
+          default: "CodePipeline Configuration"
+        Parameters:
+          # For GitHub
+          - BackendRepositoryName
+          - SourceBranchName
+          - DjangoDockerfilePath
+          - NginxDockerfilePath
+          - TaskDefinitionTemplatePath
+          - AppSpecTemplatePath
+          # For CodeBuild
+          - ECRBackendDjangoRepositoryName
+          - ECRBackendNginxRepositoryName
+          # For CodeDeploy
+          - CodeDeployApplicationName
+          - CodeDeployDeploymentGroupName
+          - CodeDeployDeploymentConfigName
+          - ECSClusterName
+          - ECSServiceName
+          - ALBTargetGroupBlueName
+          - ALBTargetGroupGreenName
+          - ALBProductionListenerArn
+          - ALBTestListenerArn
+          # For CodeStar
+          - CodeStarConnectionArn
+          # For CodePipeline Notification
+          - CICDPipelineTopicArn
+      - Label:
+          default: "ECS Auto Scaling Configuration"
+        Parameters:
+          - ServiceScaleEvaluationPeriods
+          - ServiceCPUScaleOutThreshold
+          - ServiceCPUScaleInThreshold
+          - TaskMinContainerCount
+          - TaskMaxContainerCount
+          - SNSWarningTopicName
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  # -------------------------------------
+  # Project
+  # -------------------------------------
+  ProjectName:
+    Description: "Enter the project name. (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be entered."
+    Default: my-project
+  Environment:
+    Description: "Select a environment name."
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment name must be entered."
+
+  # -------------------------------------
+  # CloudFormation
+  # -------------------------------------
+  CodePipelineTemplateURL:
+    Description: "Enter the CodePipeline template object URL in S3 bucket."
+    Type: String
+  ECSAutoScalingTemplateURL:
+    Description: "Enter the ECS Service Auto Scaling template object URL in S3 bucket."
+    Type: String
+
+  # -------------------------------------
+  # CodePipeline
+  # -------------------------------------
+  BackendRepositoryName:
+    Description: "Enter the target GitHub backend full repository name. (ex: shun198/practice-crm)"
+    Type: String
+    Default: shun198/practice-crm
+  SourceBranchName:
+    Description: "Enter the source branch name in GitHub backend repository. (ex: develop or main)"
+    Type: String
+  DjangoDockerfilePath:
+    Description: "Enter the Django Dockerfile path in GitHub backend repository. (ex: containers/django/Dockerfile.dev)"
+    Type: String
+  NginxDockerfilePath:
+    Description: "Enter the Nginx Dockerfile path in GitHub backend repository. (ex: containers/nginx/Dockerfile.dev)"
+    Type: String
+  TaskDefinitionTemplatePath:
+    Description: "Enter the ECS Task Definition template path in GitHub backend repository. (ex: ecs/taskdef.dev.json)"
+    Type: String
+  AppSpecTemplatePath:
+    Description: "Enter the Codedeploy Appspec template path in GitHub backend repository. (ex: codedeploy/appspec.yml)"
+    Type: String
+  ECRBackendDjangoRepositoryName:
+    Description: "Enter the ECR backend application repository name. (ex: my-project/dev/back/django)"
+    Type: String
+  ECRBackendNginxRepositoryName:
+    Description: "Enter the ECR backend webserver repository name. (ex: my-project/dev/back/nginx)"
+    Type: String
+  CodeDeployApplicationName:
+    Description: "Enter the CodeDeploy application name. (ex: my-project-dev-cdapp)"
+    Type: String
+  CodeDeployDeploymentGroupName:
+    Description: "Enter the CodeDeploy deployment group name. (ex: my-project-dev-cdg)"
+    Type: String
+  CodeDeployDeploymentConfigName:
+    Description: "Enter the CodeDeploy deployment config name."
+    Type: String
+    AllowedValues:
+      - CodeDeployDefault.ECSLinear10PercentEvery1Minutes
+      - CodeDeployDefault.ECSLinear10PercentEvery3Minutes
+      - CodeDeployDefault.ECSCanary10Percent5Minutes
+      - CodeDeployDefault.ECSCanary10Percent15Minutes
+      - CodeDeployDefault.ECSAllAtOnce
+  ECSClusterName:
+    Description: "Enter the ECS cluster name. (ex: my-project-dev-cluster)"
+    Type: String
+  ECSServiceName:
+    Description: "Enter the ECS service name. (ex: my-project-dev-back-service)"
+    Type: String
+  ALBTargetGroupBlueName:
+    Description: "Enter the ALB Target Group Name for Blue / Green Deployment. (ex: my-project-dev-blue-tg)"
+    Type: String
+  ALBTargetGroupGreenName:
+    Description: "Enter the ALB Target Group Name for Blue / Green Deployment. (ex: my-project-dev-green-tg)"
+    Type: String
+  ALBProductionListenerArn:
+    Description: "Enter the ALB Production Listener ARN for Blue / Green Deployment."
+    Type: String
+  ALBTestListenerArn:
+    Description: "Enter the ALB Test Listener ARN for Blue / Green Deployment."
+    Type: String
+  CodeStarConnectionArn:
+    Description: "Enter the CodeStar connection ARN. (ex: arn:aws:codestar-connections:<aws_region>:<aws_account_id>:connection/<connection_id>)"
+    Type: String
+  # CodePipeline 用 SNS トピックが既に作成されていることが前提
+  CICDPipelineTopicArn:
+    Type: String
+    Description: "Enter the ARN of SNS topic for CodePipeline (CI/CD)."
+
+  # -------------------------------------
+  # ECS Service Auto Scaling
+  # -------------------------------------
+  ServiceScaleEvaluationPeriods:
+    Description: "The number of periods over which data is compared to the specified threshold."
+    Type: Number
+    Default: 1
+    MinValue: 1
+  ServiceCPUScaleOutThreshold:
+    Description: "Average CPU value to trigger auto scaling out."
+    Type: Number
+    Default: 50
+    MinValue: 0
+    MaxValue: 100
+    ConstraintDescription: "ServiceCPUScaleOutThreshold Value must be between 0 and 100."
+  ServiceCPUScaleInThreshold:
+    Description: "Average CPU value to trigger auto scaling in."
+    Type: Number
+    Default: 30
+    MinValue: 0
+    MaxValue: 100
+    ConstraintDescription: "ServiceCPUScaleInThreshold Value must be between 0 and 100."
+  TaskMinContainerCount:
+    Description: "Minimum number of containers to run for the service."
+    Type: Number
+    Default: 1
+    MinValue: 1
+    ConstraintDescription: "TaskMinContainerCount Value must be at least one."
+  TaskMaxContainerCount:
+    Description: "Maximum number of containers to run for the service when auto scaling out."
+    Type: Number
+    Default: 2
+    MinValue: 1
+    ConstraintDescription: "TaskMaxContainerCount Value must be at least one."
+  SNSWarningTopicName:
+    Description: "SNS Topic name to notify scale in/out."
+    Type: String
+    Default: ai-warning
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  CodePipelineStack:
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref CodePipelineTemplateURL
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        BackendRepositoryName: !Ref BackendRepositoryName
+        SourceBranchName: !Ref SourceBranchName
+        DjangoDockerfilePath: !Ref DjangoDockerfilePath
+        NginxDockerfilePath: !Ref NginxDockerfilePath
+        TaskDefinitionTemplatePath: !Ref TaskDefinitionTemplatePath
+        AppSpecTemplatePath: !Ref AppSpecTemplatePath
+        ECRBackendDjangoRepositoryName: !Ref ECRBackendDjangoRepositoryName
+        ECRBackendNginxRepositoryName: !Ref ECRBackendNginxRepositoryName
+        CodeDeployApplicationName: !Ref CodeDeployApplicationName
+        CodeDeployDeploymentGroupName: !Ref CodeDeployDeploymentGroupName
+        CodeDeployDeploymentConfigName: !Ref CodeDeployDeploymentConfigName
+        ECSClusterName: !Ref ECSClusterName
+        ECSServiceName: !Ref ECSServiceName
+        ALBTargetGroupBlueName: !Ref ALBTargetGroupBlueName
+        ALBTargetGroupGreenName: !Ref ALBTargetGroupGreenName
+        ALBProductionListenerArn: !Ref ALBProductionListenerArn
+        ALBTestListenerArn: !Ref ALBTestListenerArn
+        CodeStarConnectionArn: !Ref CodeStarConnectionArn
+        CICDPipelineTopicArn: !Ref CICDPipelineTopicArn
+  ECSAutoScalingStack:
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Ref ECSAutoScalingTemplateURL
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Environment: !Ref Environment
+        TargetECSClusterName: !Ref ECSClusterName
+        TargetECSServiceName: !Ref ECSServiceName
+        ServiceScaleEvaluationPeriods: !Ref ServiceScaleEvaluationPeriods
+        ServiceCPUScaleOutThreshold: !Ref ServiceCPUScaleOutThreshold
+        ServiceCPUScaleInThreshold: !Ref ServiceCPUScaleInThreshold
+        TaskMinContainerCount: !Ref TaskMinContainerCount
+        TaskMaxContainerCount: !Ref TaskMaxContainerCount
+        SNSWarningTopicName: !Ref SNSWarningTopicName
