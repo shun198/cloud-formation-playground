@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "IAM Role For Deployment"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    # パラメータの並び順
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "IAM Configuration"
+        Parameters:
+          - S3DeployBucketName
+          - RepositoryName
+          - OIDCArn
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name. (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be entered."
+    Default: my-project
+  Environment:
+    Description: "Select a environment name."
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment name must be selected."
+  S3DeployBucketName:
+    Description: "Enter the S3 bucket name."
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "S3 bucket name must be entered."
+  RepositoryName:
+    Description: "Enter the repository name. (ex: shun198/github-actions-tutorial)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "Repository name must be entered."
+  OIDCArn:
+    Description: "Enter the OIDC Arn. (ex: arn:aws:iam::XXXXXXXXXXXX:oidc-provider/token.actions.githubusercontent.com)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "OIDC Arn must be entered."
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  S3DeployIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub s3-deploy-${ProjectName}-${Environment}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Ref OIDCArn
+            Action: 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub repo:${RepositoryName}:ref:refs/heads/main
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+      Policies:
+        - PolicyName: !Sub S3DeployAccessPolicy-${ProjectName}-${Environment}
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub arn:aws:s3:::${S3DeployBucketName}
+                  - !Sub arn:aws:s3:::${S3DeployBucketName}/*
