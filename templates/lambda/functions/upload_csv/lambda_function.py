@@ -21,15 +21,14 @@ def lambda_handler(event, context) -> str:
     """
 
     print("lambda_handler")
-    body = json.loads(event["Records"][0]["body"])
+    id = json.loads(event["Records"][0]["body"]["id"])
     lambda_token = getParameterStoreValue(os.environ.get("LAMBDA_TOKEN"))
     url = getParameterStoreValue(os.environ.get("INTERNAL_BACK_SRV_URL")) + f"/api/customers/register_csv"
-    data = {"token": lambda_token}
+    data = {"token": lambda_token, "id": id}
     headers = {"Content-Type": "application/json"}
     response = requests.post(url=url, data=json.dumps(data).encode(), headers=headers)
     print(response.status_code)
     print(response.json()["msg"])
-
     return "finish lambda"
 
 
