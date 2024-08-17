@@ -27,7 +27,7 @@ jobs:
         run: |
           templates=$(git diff HEAD~1 --name-status | grep ${{ env.WORKING_DIRECTORY }}/ | grep "^M\|^A" | cut -f2)
           echo $templates
-          echo "templates=$templates" >> $GITHUB_OUTPUT
+          echo templates >> $GITHUB_OUTPUT
       - name: Upload to S3
         id: templates
         env:
