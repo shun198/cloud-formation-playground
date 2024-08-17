@@ -14,9 +14,6 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ${{ env.WORKING_DIRECTORY }}
     steps:
       - name: Chekcout code
         uses: actions/checkout@v4
@@ -29,6 +26,13 @@ jobs:
           changed_templates=$(git diff HEAD~1 --name-only | grep -c templates/)
           echo $changed_templates
           echo changed_templates=$changed_templates >> "$GITHUB_OUTPUT"
+      # - name: configure aws credentials
+      #   if: ${{ steps.templates.outputs.changed_templates > 0 }};
+      #   uses: aws-actions/configure-aws-credentials@v2
+      #   with:
+      #     role-to-assume: arn:aws:iam::XXXXXXXXXXXX:role/github-actions-deploy-s3-bucket
+      #     role-session-name: upload-template-dev
+      #     aws-region: ${{ env.REGION_NAME }}
       - name: Upload to S3
         if: ${{ steps.templates.outputs.changed_templates > 0 }};
         run: |
@@ -37,12 +41,3 @@ jobs:
           for template in $templates; do
             echo $template
           done
-      # - name: configure aws credentials
-      #   if: env.TEMPLATE_CHANGED == 'true'
-      #   run: echo 'template changed'
-      #   uses: aws-actions/configure-aws-credentials@v2
-      #   with:
-      #     role-to-assume: arn:aws:iam::XXXXXXXXXXXX:role/github-actions-deploy-s3-bucket
-      #     role-session-name: samplerolesession
-      #     aws-region: ${{ env.REGION_NAME }}
-
