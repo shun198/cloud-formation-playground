@@ -10,7 +10,7 @@ env:
   REGION_NAME: ap-northeast-1
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -23,7 +23,7 @@ jobs:
       - name: Check for template changes
         run: |
           TEMPLATE_CHANGED=false
-          if git diff --name-only origin/${{ github.base_ref }} | grep -c ${{ env.WORKING_DIRECTORY }}/ > 0; then
+          if git diff --name-only -- origin/${{ github.base_ref }} | grep -c ${{ env.WORKING_DIRECTORY }}/ > 0; then
             MODEL_CHANGED=true
           fi
           echo "TEMPLATE_CHANGED=$TEMPLATE_CHANGED" >> $GITHUB_ENV
