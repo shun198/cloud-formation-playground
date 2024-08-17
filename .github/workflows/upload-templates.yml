@@ -38,9 +38,10 @@ jobs:
       - name: Upload to S3
         # if: ${{ env.changed_files != '' }}
         run: |
+          echo ${{ env.templates }}
           # ファイルごとにアップロード
-          for file in ${{ env.changed_files }}; do
-            echo 'file'
+          for template in ${{ env.templates }}; do
+            echo 'template'
           done
         # run: |
         #   # ファイルごとにアップロード
