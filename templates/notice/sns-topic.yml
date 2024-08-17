@@ -18,13 +18,13 @@ Metadata:
 # -------------------------------------
 Parameters:
   PendingWindowInDays:
-    Description: "Enter the number of days to wait before being removed from the stack"
+    Description: "Enter the number of days to wait before being removed from the stack."
     Type: Number
     Default: 30
     MinValue: 7
     MaxValue: 30
   KMSKeyAliasName:
-    Description: "Enter the alias name for SNS KMS key (default: alias/cmk/sns)"
+    Description: "Enter the alias name for SNS KMS key (default: alias/cmk/sns)."
     Type: String
     Default: alias/cmk/sns
 
@@ -38,7 +38,7 @@ Resources:
   SNSKMSKey:
     Type: AWS::KMS::Key
     Properties:
-      Description: "KMS key for encrypting SNS"
+      Description: "KMS key for encrypting SNS."
       PendingWindowInDays: !Ref PendingWindowInDays
       KeyPolicy:
         Version: 2012-10-17
@@ -73,8 +73,8 @@ Resources:
   AlertTopic:
     Type: AWS::SNS::Topic
     Properties:
-      DisplayName: shun198-alert
-      TopicName: shun198-alert
+      DisplayName: my-project-alert
+      TopicName: my-project-alert
       KmsMasterKeyId: !Ref KMSKeyAliasName
   AlertTopicPolicy:
     Type: AWS::SNS::TopicPolicy
@@ -100,8 +100,8 @@ Resources:
   WarningTopic:
     Type: AWS::SNS::Topic
     Properties:
-      DisplayName: shun198-warning
-      TopicName: shun198-warning
+      DisplayName: my-project-warning
+      TopicName: my-project-warning
       KmsMasterKeyId: !Ref KMSKeyAliasName
   WarningTopicPolicy:
     Type: AWS::SNS::TopicPolicy
@@ -127,8 +127,8 @@ Resources:
   SecurityTopic:
     Type: AWS::SNS::Topic
     Properties:
-      DisplayName: shun198-security
-      TopicName: shun198-security
+      DisplayName: my-project-security
+      TopicName: my-project-security
       KmsMasterKeyId: !Ref KMSKeyAliasName
   SecurityTopicPolicy:
     Type: AWS::SNS::TopicPolicy

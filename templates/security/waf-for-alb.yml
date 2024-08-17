@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: "WAFv2 For ALB"
+Description: "WAFv2 Stack For ALB"
 
 # -------------------------------------
 # Metadata
@@ -13,39 +13,53 @@ Metadata:
           - ProjectName
           - Environment
       - Label:
-          default: "WAF Configuration"
+          default: "WAFv2 Configuration"
         Parameters:
-          - AllowIPAddresses
+          - WAFLogsPrefix
+          - IPBlackList
           - WebACLAssociationArn
-          - TargetALBName
+          - CWLogsRetentionInDays
 
 # -------------------------------------
 # Parameters
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name (ex: my-project)"
+    Description: "Enter the project name. (ex: my-project)"
     Type: String
     MinLength: 1
-    ConstraintDescription: "ProjectName must be enter"
+    ConstraintDescription: "ProjectName must be entered."
     Default: my-project
   Environment:
-    Description: "Select the environment"
+    Description: "Select a environment name."
     Type: String
     AllowedValues:
       - dev
       - stg
       - prd
-    ConstraintDescription: "Environment must be select"
-  AllowIPAddresses:
-    Description: "Enter the IP address for IP whitelist separated by commas (ex: 0.0.0.0/32,1.1.1.1/32,2.2.2.2/32)"
+    ConstraintDescription: "Environment name must be selected."
+  WAFLogsPrefix:
+    Description: "Enter the prefix for WAF logs."
+    Type: String
+    Default: aws-waf-logs
+    AllowedValues:
+      - aws-waf-logs
+  IPBlackList:
+    Description: "Enter the IP addresses for blacklist separated by commas. (ex: 1.1.1.1/32,2.2.2.2/32)"
     Type: CommaDelimitedList
   WebACLAssociationArn:
-    Description: "Enter the Target ARN for WAFv2 Web ACL Association (ex: arn:aws:elasticloadbalancing:ap-northeast-1:12345678)"
+    Description: "Enter the Target ARN for WAFv2 Web ACL Association. (ex: arn:aws:elasticloadbalancing:ap-northeast-1:12345678)"
     Type: String
-  TargetALBName:
-    Description: "Enter the target ALB Name for WAFv2 Web ACL Association"
+  CWLogsRetentionInDays:
+    Description: "Enter the data retention period for CloudWatch Logs. (ex: 30)"
     Type: String
+    AllowedValues: [30,60,90,120,150,180,365]
+
+# -------------------------------------
+# Conditions
+# -------------------------------------
+Conditions:
+  HasIPBlackList: !Not [!Equals [!Join [",", !Ref IPBlackList], ""]]
 
 # -------------------------------------
 # Resources
@@ -54,10 +68,10 @@ Resources:
   # -------------------------------------
   # WAFv2 S3 Bucket
   # -------------------------------------
-  WAFLogsS3Bucket:
+  WAFLogsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub aws-waf-logs-for-${TargetALBName}
+      BucketName: !Sub ${WAFLogsPrefix}-for-${ProjectName}-${Environment}-alb
       BucketEncryption:
         ServerSideEncryptionConfiguration:
         - ServerSideEncryptionByDefault:
@@ -81,8 +95,6 @@ Resources:
   # -------------------------------------
   # WAFv2 ACL
   # -------------------------------------
-  # ウェブアクセスコントロールリスト (ウェブ ACL) を使用すると、保護されたリソースが応答するすべての HTTP(S) ウェブリクエストをきめ細かく制御できます
-  # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/web-acl.html
   WebACL:
     Type: AWS::WAFv2::WebACL
     Properties:
@@ -91,32 +103,24 @@ Resources:
         Allow: {}
       Scope: REGIONAL
       VisibilityConfig:
-        CloudWatchMetricsEnabled: true
-        MetricName: !Sub ${ProjectName}-${Environment}-waf
         SampledRequestsEnabled: true
-      # https://ops.jig-saw.com/tech-cate/layer-security-waf
-      # OSI参照モデルに基づいてPriorityを決定
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub ${ProjectName}-${Environment}-alb-waf
       Rules:
-        - Name: IPAddressWhitelistRule
-          Priority: 10
-          Statement:
-            RateBasedStatement:
-              AggregateKeyType: IP
-              Limit: 100
-              ScopeDownStatement:
-                NotStatement:
-                  Statement:
-                    IPSetReferenceStatement:
-                      Arn: !GetAtt IPWhitelist.Arn
-          Action:
-            Count: {}
-          VisibilityConfig:
-            CloudWatchMetricsEnabled: true
-            MetricName: IPAddressWhitelistRule
-            SampledRequestsEnabled: true
-        # Amazon 内部脅威インテリジェンスに基づくルール
-        # ボットやその他の脅威に関連付けられている IP アドレスをブロックする場合に便利
-        # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/aws-managed-rule-groups-ip-rep.html#aws-managed-rule-groups-ip-rep-amazon
+        - !If
+          - HasIPBlackList
+          - Name: Custom-IPAddressBlacklist
+            Priority: 10
+            Statement:
+              IPSetReferenceStatement:
+                Arn: !GetAtt IPAddressBlacklistSet.Arn
+            Action:
+              Block: {}
+            VisibilityConfig:
+              SampledRequestsEnabled: true
+              CloudWatchMetricsEnabled: true
+              MetricName: Custom-IPAddressBlacklist
+          - !Ref AWS::NoValue
         - Name: AWS-AWSManagedRulesAmazonIpReputationList
           Priority: 20
           Statement:
@@ -124,13 +128,11 @@ Resources:
               VendorName: AWS
               Name: AWSManagedRulesAmazonIpReputationList
           OverrideAction:
-            None: {}
+            Count: {}
           VisibilityConfig:
+            SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
             MetricName: AWSManagedRulesAmazonIpReputationList
-            SampledRequestsEnabled: true
-        # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/aws-managed-rule-groups-ip-rep.html#aws-managed-rule-groups-ip-rep-anonymous
-        # 匿名 IP リストのルールグループには、ビューワー ID の難読化を許可するサービスからのリクエストをブロックするルールが含まれています
         - Name: AWS-AWSManagedRulesAnonymousIpList
           Priority: 30
           Statement:
@@ -140,14 +142,11 @@ Resources:
               ExcludedRules:
                 - Name: HostingProviderIPList
           OverrideAction:
-            None: {}
+            Count: {}
           VisibilityConfig:
+            SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
             MetricName: AWSManagedRulesAnonymousIpList
-            SampledRequestsEnabled: true
-        # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/aws-managed-rule-groups-baseline.html#aws-managed-rule-groups-baseline-crs
-        # ウェブアプリケーションに一般的に適用可能なルールが含まれています
-        # OWASP Top 10 などの OWASP の出版物に記載されている、リスクが高く一般的に発生するいくつかの脆弱性を含む、さまざまな脆弱性の悪用に対する保護が提供されます
         - Name: AWS-AWSManagedRulesCommonRuleSet
           Priority: 40
           Statement:
@@ -156,29 +155,24 @@ Resources:
               Name: AWSManagedRulesCommonRuleSet
               ExcludedRules:
                 - Name: SizeRestrictions_BODY
-                - Name: CrossSiteScripting_BODY
           OverrideAction:
-            None: {}
+            Count: {}
           VisibilityConfig:
+            SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
             MetricName: AWSManagedRulesCommonRuleSet
-            SampledRequestsEnabled: true
-        # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/aws-managed-rule-groups-baseline.html#aws-managed-rule-groups-baseline-known-bad-inputs
-        # 無効であることがわかっており脆弱性の悪用または発見に関連するリクエストパターンをブロックするルールが含まれています
-        - Name: AWS-AWSManagedRulesKnownBadInputsRuleSet
+        - Name: AWSManagedRulesKnownBadInputsRuleSet
+          OverrideAction:
+            Count: {}
           Priority: 50
           Statement:
             ManagedRuleGroupStatement:
-              VendorName: AWS
               Name: AWSManagedRulesKnownBadInputsRuleSet
-          OverrideAction:
-            None: {}
+              VendorName: AWS
           VisibilityConfig:
+            SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
             MetricName: AWSManagedRulesKnownBadInputsRuleSet
-            SampledRequestsEnabled: true
-        # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/aws-managed-rule-groups-use-case.html#aws-managed-rule-groups-use-case-linux-os
-        # Linux 固有のローカルファイルインクルージョン (LFI) 攻撃など、Linux 固有の脆弱性の悪用に関連するリクエストパターンをブロックするルール
         - Name: AWS-AWSManagedRulesLinuxRuleSet
           Priority: 60
           Statement:
@@ -186,14 +180,11 @@ Resources:
               VendorName: AWS
               Name: AWSManagedRulesLinuxRuleSet
           OverrideAction:
-            None: {}
+            Count: {}
           VisibilityConfig:
+            SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
             MetricName: AWSManagedRulesLinuxRuleSet
-            SampledRequestsEnabled: true
-        # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/aws-managed-rule-groups-use-case.html#aws-managed-rule-groups-use-case-posix-os
-        # POSIX オペレーティングシステムルールグループには、POSIX および POSIX と同等のオペレーティングシステムに固有の脆弱性の悪用 (ローカルファイルインクルージョン (LFI) 攻撃など) に関連するリクエストパターンをブロックするルールが含まれています
-        # 攻撃者がアクセスしてはならないファイルの内容を公開したり、コードを実行したりする攻撃を防ぐことができます
         - Name: AWS-AWSManagedRulesUnixRuleSet
           Priority: 70
           Statement:
@@ -201,13 +192,11 @@ Resources:
               VendorName: AWS
               Name: AWSManagedRulesUnixRuleSet
           OverrideAction:
-            None: {}
+            Count: {}
           VisibilityConfig:
+            SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
             MetricName: AWSManagedRulesUnixRuleSet
-            SampledRequestsEnabled: true
-        # https://docs.aws.amazon.com/ja_jp/waf/latest/developerguide/aws-managed-rule-groups-use-case.html#aws-managed-rule-groups-use-case-sql-db
-        # SQL インジェクション攻撃などの SQL データベースの悪用に関連するリクエストパターンをブロックするルール
         - Name: AWS-AWSManagedRulesSQLiRuleSet
           Priority: 80
           Statement:
@@ -215,30 +204,28 @@ Resources:
               VendorName: AWS
               Name: AWSManagedRulesSQLiRuleSet
           OverrideAction:
-            None: {}
+            Count: {}
           VisibilityConfig:
+            SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
             MetricName: AWSManagedRulesSQLiRuleSet
-            SampledRequestsEnabled: true
 
   # -------------------------------------
-  # White IP Address
+  # WAFv2 IP Set
   # -------------------------------------
-  IPWhitelist:
+  IPAddressBlacklistSet:
+    Condition: HasIPBlackList
     Type: AWS::WAFv2::IPSet
     Properties:
-      Name: Custom-IPAddress-Whitelist
+      Name: !Sub Custom-IPAddressBlacklist-for-${ProjectName}-${Environment}-alb-waf
+      Description: "This List of IP addresses unaccessible to the application."
       Scope: REGIONAL
       IPAddressVersion: IPV4
-      Addresses: !Ref AllowIPAddresses
+      Addresses: !Ref IPBlackList
 
   # -------------------------------------
   # WebACLAssociation
   # -------------------------------------
-  # https://docs.aws.amazon.com/ja_jp/AWSCloudFormation/latest/UserGuide/aws-resource-wafv2-webaclassociation.html
-  # リージョナルなリソースとWebACLを関連付ける
-  # CloudFrontはグルーバルなリソースなので関連付けする必要がない
-  # 代わりにCloudFrontのdistributionに設定する
   WebACLAssociation:
     Type: AWS::WAFv2::WebACLAssociation
     Properties:
@@ -251,14 +238,19 @@ Resources:
   WAFLogsDeliveryStreamLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub aws-waf-logs-for-${TargetALBName}
-      RetentionInDays: 90
+      LogGroupName: !Sub ${WAFLogsPrefix}-for-${ProjectName}-${Environment}-alb
+      RetentionInDays: !Ref CWLogsRetentionInDays
       Tags:
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
+
+  # -------------------------------------
+  # WAFv2 Log Subscription
+  # -------------------------------------
   WAFLogsSubscriptionFilter:
+    DependsOn: CloudWatchLogsRolePolicy
     Type: AWS::Logs::SubscriptionFilter
     Properties:
       RoleArn: !GetAtt CloudWatchLogsRole.Arn
@@ -274,7 +266,9 @@ Resources:
     Type: AWS::WAFv2::LoggingConfiguration
     Properties:
       LogDestinationConfigs:
-        - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-for-${TargetALBName}
+        - !Sub
+          - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${WAFLogsDeliveryStreamLogGroup}
+          - { WAFLogsDeliveryStreamLogGroup: !Ref WAFLogsDeliveryStreamLogGroup }
       ResourceArn: !GetAtt WebACL.Arn
 
   # -------------------------------------
@@ -283,27 +277,23 @@ Resources:
   WAFv2ForALBDeliveryStream:
     Type: AWS::KinesisFirehose::DeliveryStream
     Properties:
-      DeliveryStreamName: !Sub kinesis-s3-for-aws-waf-logs-${TargetALBName}
-      # 暗号化設定。今回はデフォルトのAWS_OWNED_CMKを指定
+      DeliveryStreamName: !Sub kinesis-s3-for-${WAFLogsPrefix}-alb-${ProjectName}-${Environment}
       DeliveryStreamEncryptionConfigurationInput:
         KeyType: AWS_OWNED_CMK
       ExtendedS3DestinationConfiguration:
-        RoleARN: !GetAtt KinesisDataFirehoseRole.Arn
-        BucketARN: !GetAtt WAFLogsS3Bucket.Arn
+        BucketARN: !GetAtt WAFLogsBucket.Arn
         BufferingHints:
-          # 受信データを宛先に配信する前にバッファリングする時間の長さ (秒単位)
           IntervalInSeconds: 300
-          # 宛先に配信する前に受信データに使用するバッファのサイズ (MB 単位)
           SizeInMBs: 5
-        # 圧縮形式。今回はGZIPを使用
         CompressionFormat: GZIP
         Prefix: ""
+        RoleARN: !GetAtt KinesisDataFirehoseRole.Arn
         ProcessingConfiguration:
           Enabled: false
         CloudWatchLoggingOptions:
           Enabled: true
-          LogGroupName: /aws/kinesisfirehose/s3-delivery-stream
-          LogStreamName: !Sub s3-delivery-waf-${TargetALBName}
+          LogGroupName: !Sub /aws/kinesisfirehose/s3-delivery-stream/${ProjectName}-${Environment}-alb
+          LogStreamName: !Sub s3-delivery-waf-${ProjectName}-${Environment}-alb
       Tags:
         - Key: ProjectName
           Value: !Ref ProjectName
@@ -311,13 +301,13 @@ Resources:
           Value: !Ref Environment
 
   # -------------------------------------
-  # IAM Role
+  # IAM Role & IAM Policy
   # -------------------------------------
-  # For CloudWatch Logs
+  # for CloudWatch Logs
   CloudWatchLogsRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub CWLogsRoleForKinesisFirehose-aws-waf-${TargetALBName}
+      RoleName: !Sub CWLogsRoleForKinesisFirehose-${ProjectName}-${Environment}-alb-waf
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -327,18 +317,20 @@ Resources:
             Action:
               - sts:AssumeRole
       Path: /service-role/
+  # 自己参照回避
   CloudWatchLogsRolePolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Sub CWLogsAccessForKinesisFirehose-aws-waf-${TargetALBName}
+      PolicyName: !Sub CWLogsAccessForKinesisFirehose-${ProjectName}-${Environment}-alb-waf
       PolicyDocument:
         Version: 2012-10-17
         Statement:
           - Effect: Allow
             Action:
-              - firehose:*
+              - firehose:PutRecord
+              - firehose:PutRecordBatch
             Resource:
-              - !Sub arn:aws:firehose:${AWS::Region}:${AWS::AccountId}:*
+              - !GetAtt WAFv2ForALBDeliveryStream.Arn
           - Effect: Allow
             Action:
               - iam:PassRole
@@ -350,7 +342,7 @@ Resources:
   KinesisDataFirehoseRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub KinesisFirehoseRoleForS3-aws-waf-${TargetALBName}
+      RoleName: !Sub KinesisFirehoseRoleForS3-${ProjectName}-${Environment}-alb
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -364,7 +356,7 @@ Resources:
                 sts:ExternalId: !Ref AWS::AccountId
       Path: /service-role/
       Policies:
-        - PolicyName: !Sub KinesisFirehoseAccessForS3-aws-waf-${TargetALBName}
+        - PolicyName: !Sub KinesisFirehoseAccessForS3-${ProjectName}-${Environment}-alb
           PolicyDocument:
             Statement:
               - Effect: Allow
@@ -377,15 +369,19 @@ Resources:
                   - s3:ListBucketMultipartUploads
                   - logs:PutLogEvents
                 Resource:
-                  - !Sub arn:aws:s3:::aws-waf-logs-for-${TargetALBName}
-                  - !Sub arn:aws:s3:::aws-waf-logs-for-${TargetALBName}/*
-                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs-for-${TargetALBName}:log-stream:*
+                  - !GetAtt WAFLogsBucket.Arn
+                  - !Sub
+                    - ${WAFLogsBucket}/*
+                    - { WAFLogsBucket: !GetAtt WAFLogsBucket.Arn }
+                  - !Sub
+                    - ${WAFLogsDeliveryStreamLogGroup}:log-stream:*
+                    - { WAFLogsDeliveryStreamLogGroup: !GetAtt WAFLogsDeliveryStreamLogGroup.Arn }
 
 # -------------------------------------
 # Outputs
 # -------------------------------------
 Outputs:
-  WAFLogsS3BucketArn:
-    Value: !GetAtt WAFLogsS3Bucket.Arn
-  WebACLArn:
+  ALBWebACLArn:
     Value: !GetAtt WebACL.Arn
+  WAFLogsBucketArn:
+    Value: !GetAtt WAFLogsBucket.Arn

@@ -27,102 +27,121 @@ Metadata:
           - SlackChannelIDForAlert
           - SlackChannelIDForWarning
           - SlackChannelIDForSecurity
-          # - SlackChannelIDForCICDPipeline
-          # - SlackChannelIDForAggregateNotice
+          - SlackChannelIDForHealth
+          - SlackChannelIDForCICDPipeline
+          - SlackChannelIDForAggregateNotice
+          - SlackChannelIDForCloudTrail
       - Label:
           default: "SNS Configuration"
         Parameters:
           - AlertTopicName
           - WarningTopicName
           - SecurityTopicName
-          # - CICDPipelineTopicName
+          - HealthTopicName
+          - CICDPipelineTopicName
+          - CloudTrailTopicName
 
 # -------------------------------------
 # Parameters
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name (ex: my-project)"
+    Description: "Enter the project name (ex: my-project)."
     Type: String
     MinLength: 1
-    ConstraintDescription: "ProjectName must be enter"
+    ConstraintDescription: "ProjectName must be entered."
     Default: my-project
   Environment:
-    Description: "Select the environment"
+    Description: "Select a environment name."
     Type: String
     AllowedValues:
       - dev
       - stg
       - prd
-    ConstraintDescription: "Environment must be select"
+    ConstraintDescription: "Environment name must be selected."
   ChatbotRoleName:
-    Description: "Enter the Chatbot Role name (default: AWSChatbotRole)"
+    Description: "Enter the Chatbot Role name (default: AWSChatbotRole)."
     Type: String
     Default: AWSChatbotRole
-  # Slack ワークスペース ID
   SlackWorkspaceID:
-    Description: "Enter the Slack Workspace ID"
+    Description: "Enter the Slack Workspace ID."
     Type: String
   # アラート通知先の Slack Channel ID
   SlackChannelIDForAlert:
-    Description: "Enter the Slack channel ID for individual alert notification"
-    # Description: |-
-    #   Enter the Slack channel ID for individual alert notifications only in the production environment.
-    #   For other environments (i.e. development or staging),
-    #   enter the Slack channel ID for aggregated notifications for each environment.
     Type: String
+    Description: |-
+      Enter the Slack channel ID for individual alert notifications only in the production environment.
+      For other environments (i.e. development or staging),
+      enter the Slack channel ID for aggregated notifications for each environment.
   # ワーニング通知先の Slack Channel ID
   SlackChannelIDForWarning:
-    # Description: |-
-    #   Enter the Slack channel ID for individual warning notifications only in the production environment.
-    #   For other environments (i.e. development or staging),
-    #   enter the Slack channel ID for aggregated notifications for each environment.
-    Description: "Enter the Slack channel ID for warning notification"
+    Description: |-
+      Enter the Slack channel ID for individual warning notifications only in the production environment.
+      For other environments (i.e. development or staging),
+      enter the Slack channel ID for aggregated notifications for each environment.
     Type: String
   # セキュリティ関連通知先の Slack Channel ID
   SlackChannelIDForSecurity:
-    Description: "Enter the Slack channel ID for security notification"
+    Description: "Enter the Slack channel ID for security notification."
+    Type: String
+  # AWS Health 通知先の Slack Channel ID
+  SlackChannelIDForHealth:
+    Description: "Enter the Slack channel ID for health notification."
     Type: String
   # CI/CD 関連通知先の Slack Channel ID
-  # SlackChannelIDForCICDPipeline:
-  #   Description: |-
-  #     Enter the Slack channel ID for individual notifications only in the production environment.
-  #     For other environments (i.e. development or staging),
-  #     enter the Slack channel ID for aggregated notifications for each environment.
-  #   Type: String
+  SlackChannelIDForCICDPipeline:
+    Description: |-
+      Enter the Slack channel ID for individual notifications only in the production environment.
+      For other environments (i.e. development or staging),
+      enter the Slack channel ID for aggregated notifications for each environment.
+    Type: String
   # 通知集約用 Slack Channel ID (DEV, STG 環境限定)
-  # SlackChannelIDForAggregateNotice:
-  #   Description: "Enter the Slack channel ID where notifications will be collected for non-production environments (i.e. development or staging)"
-  #   Type: String
+  SlackChannelIDForAggregateNotice:
+    Description: "Enter the Slack channel ID where notifications will be collected for non-production environments (i.e. development or staging)."
+    Type: String
+  # CloudTrail通知先の Slack Channel ID
+  SlackChannelIDForCloudTrail:
+    Description: "Enter the Slack channel ID for CloudTrail."
+    Type: String
   # アラート通知先 SNS TopicName
   AlertTopicName:
-    Description: "Enter the SNS Topic name for alert"
+    Description: "Enter the SNS Topic name for alert."
     Type: String
-    Default: shun198-alert
+    Default: my-project-alert
   # ワーニング通知先 SNS TopicName
   WarningTopicName:
-    Description: "Enter the SNS Topic name for warning"
+    Description: "Enter the SNS Topic name for warning."
     Type: String
-    Default: shun198-warning
+    Default: my-project-warning
   # セキュリティ関連通知先 SNS TopicName
   SecurityTopicName:
-    Description: "Enter the SNS Topic name for security"
+    Description: "Enter the SNS Topic name for security."
     Type: String
-    Default: shun198-security
+    Default: my-project-security
+  # AWS Health 通知先 SNS TopicName
+  HealthTopicName:
+    Description: "Enter the SNS Topic name for health."
+    Type: String
+    Default: my-project-health
   # CI/CD 関連通知先 SNS TopicName
-  # CICDPipelineTopicName:
-  #   Description: "Enter the SNS Topic name for cicd pipeline"
-  #   Type: String
-  #   Default: cicd-pipeline
+  CICDPipelineTopicName:
+    Description: "Enter the SNS Topic name for cicd pipeline."
+    Type: String
+    Default: my-project-cicd-pipeline
+  # CloudTrail 通知先 SNS TopicName
+  CloudTrailTopicName:
+    Description: "Name of SNS Topic name for CloudTrail."
+    Type: String
+    Default: my-project-cloudtrail
 
 # -------------------------------------
 # Conditions
 # -------------------------------------
-# Conditions:
-#   # PRD 環境用の条件
-#   IsPrdEnv: !Equals [!Ref Environment, prd]
-#   # DEV 環境 + STG 環境用の条件
-#   IsNotPrdEnv: !Not [!Equals [!Ref Environment, prd]]
+Conditions:
+  # PRD 環境用の条件
+  IsPrdEnv: !Equals [!Ref Environment, prd]
+  # DEV 環境 + STG 環境用の条件
+  IsNotPrdEnv: !Not [!Equals [!Ref Environment, prd]]
 
 # -------------------------------------
 # Resources
@@ -161,10 +180,10 @@ Resources:
   # Chatbot
   # -------------------------------------
   ChatbotForAlert:
-    # Condition: IsPrdEnv
+    Condition: IsPrdEnv
     Type: AWS::Chatbot::SlackChannelConfiguration
     Properties:
-      ConfigurationName: shun198-notice-aws-alert
+      ConfigurationName: notice-aws-alert
       IamRoleArn: !GetAtt ChatbotRole.Arn
       LoggingLevel: ERROR
       SlackWorkspaceId: !Ref SlackWorkspaceID
@@ -174,10 +193,10 @@ Resources:
         - !Sub arn:aws:sns:ap-northeast-3:${AWS::AccountId}:${AlertTopicName}
         - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:${AlertTopicName}
   ChatbotForWarning:
-    # Condition: IsPrdEnv
+    Condition: IsPrdEnv
     Type: AWS::Chatbot::SlackChannelConfiguration
     Properties:
-      ConfigurationName: shun198-notice-aws-warning
+      ConfigurationName: notice-aws-warning
       IamRoleArn: !GetAtt ChatbotRole.Arn
       LoggingLevel: ERROR
       SlackWorkspaceId: !Ref SlackWorkspaceID
@@ -189,7 +208,7 @@ Resources:
   ChatbotForSecurity:
     Type: AWS::Chatbot::SlackChannelConfiguration
     Properties:
-      ConfigurationName: shun198-notice-aws-security
+      ConfigurationName: notice-aws-security
       IamRoleArn: !GetAtt ChatbotRole.Arn
       LoggingLevel: ERROR
       SlackWorkspaceId: !Ref SlackWorkspaceID
@@ -198,35 +217,57 @@ Resources:
         - !Sub arn:aws:sns:ap-northeast-1:${AWS::AccountId}:${SecurityTopicName}
         - !Sub arn:aws:sns:ap-northeast-3:${AWS::AccountId}:${SecurityTopicName}
         - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:${SecurityTopicName}
-  # ChatbotForCICD:
-  #   Condition: IsPrdEnv
-  #   Type: AWS::Chatbot::SlackChannelConfiguration
-  #   Properties:
-  #     ConfigurationName: notice-aws-cicd-pipeline
-  #     IamRoleArn: !GetAtt ChatbotRole.Arn
-  #     LoggingLevel: ERROR
-  #     SlackWorkspaceId: !Ref SlackWorkspaceID
-  #     SlackChannelId: !Ref SlackChannelIDForCICDPipeline
-  #     SnsTopicArns:
-  #       - !Sub arn:aws:sns:ap-northeast-1:${AWS::AccountId}:${CICDPipelineTopicName}
-  # ChatbotForAggregateNotice:
-  #   Condition: IsNotPrdEnv
-  #   Type: AWS::Chatbot::SlackChannelConfiguration
-  #   Properties:
-  #     ConfigurationName: !Sub notice-${ProjectName}-${Environment}
-  #     IamRoleArn: !GetAtt ChatbotRole.Arn
-  #     LoggingLevel: ERROR
-  #     SlackWorkspaceId: !Ref SlackWorkspaceID
-  #     SlackChannelId: !Ref SlackChannelIDForAggregateNotice
-  #     SnsTopicArns:
-  #       # For Alert
-  #       - !Sub arn:aws:sns:ap-northeast-1:${AWS::AccountId}:${AlertTopicName}
-  #       - !Sub arn:aws:sns:ap-northeast-3:${AWS::AccountId}:${AlertTopicName}
-  #       - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:${AlertTopicName}
-  #       # For Warning
-  #       - !Sub arn:aws:sns:ap-northeast-1:${AWS::AccountId}:${WarningTopicName}
-  #       - !Sub arn:aws:sns:ap-northeast-3:${AWS::AccountId}:${WarningTopicName}
-  #       - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:${WarningTopicName}
-  #       # For CI/CD Pipeline
-  #       - !Sub arn:aws:sns:ap-northeast-1:${AWS::AccountId}:${CICDPipelineTopicName}
-
+  ChatbotForHealth:
+    Type: AWS::Chatbot::SlackChannelConfiguration
+    Properties:
+      ConfigurationName: notice-aws-health
+      IamRoleArn: !GetAtt ChatbotRole.Arn
+      LoggingLevel: ERROR
+      SlackWorkspaceId: !Ref SlackWorkspaceID
+      SlackChannelId: !Ref SlackChannelIDForHealth
+      SnsTopicArns:
+        - !Sub arn:aws:sns:ap-northeast-1:${AWS::AccountId}:${HealthTopicName}
+        - !Sub arn:aws:sns:ap-northeast-3:${AWS::AccountId}:${HealthTopicName}
+        - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:${HealthTopicName}
+  ChatbotForCICD:
+    Condition: IsPrdEnv
+    Type: AWS::Chatbot::SlackChannelConfiguration
+    Properties:
+      ConfigurationName: notice-aws-cicd-pipeline
+      IamRoleArn: !GetAtt ChatbotRole.Arn
+      LoggingLevel: ERROR
+      SlackWorkspaceId: !Ref SlackWorkspaceID
+      SlackChannelId: !Ref SlackChannelIDForCICDPipeline
+      SnsTopicArns:
+        - !Sub arn:aws:sns:ap-northeast-1:${AWS::AccountId}:${CICDPipelineTopicName}
+  ChatbotForAggregateNotice:
+    Condition: IsNotPrdEnv
+    Type: AWS::Chatbot::SlackChannelConfiguration
+    Properties:
+      ConfigurationName: !Sub notice-${ProjectName}-${Environment}
+      IamRoleArn: !GetAtt ChatbotRole.Arn
+      LoggingLevel: ERROR
+      SlackWorkspaceId: !Ref SlackWorkspaceID
+      SlackChannelId: !Ref SlackChannelIDForAggregateNotice
+      SnsTopicArns:
+        # For Alert
+        - !Sub arn:aws:sns:ap-northeast-1:${AWS::AccountId}:${AlertTopicName}
+        - !Sub arn:aws:sns:ap-northeast-3:${AWS::AccountId}:${AlertTopicName}
+        - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:${AlertTopicName}
+        # For Warning
+        - !Sub arn:aws:sns:ap-northeast-1:${AWS::AccountId}:${WarningTopicName}
+        - !Sub arn:aws:sns:ap-northeast-3:${AWS::AccountId}:${WarningTopicName}
+        - !Sub arn:aws:sns:us-east-1:${AWS::AccountId}:${WarningTopicName}
+        # For CI/CD Pipeline
+        - !Sub arn:aws:sns:ap-northeast-1:${AWS::AccountId}:${CICDPipelineTopicName}
+  ChatbotForCloudTrail:
+    Type: AWS::Chatbot::SlackChannelConfiguration
+    Properties:
+      ConfigurationName: !Sub notice-cloudtrail
+      IamRoleArn: !GetAtt ChatbotRole.Arn
+      LoggingLevel: ERROR
+      SlackWorkspaceId: !Ref SlackWorkspaceID
+      SlackChannelId: !Ref SlackChannelIDForCloudTrail
+      SnsTopicArns:
+        # For CloudTrail
+        - !Sub arn:aws:sns:ap-northeast-1:${AWS::AccountId}:${CloudTrailTopicName}
