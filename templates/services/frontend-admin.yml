@@ -78,7 +78,7 @@ Parameters:
     Description: "Select the Route 53 Hosted Zone ID"
     Type: AWS::Route53::HostedZone::Id
   DomainName:
-    Description: "Enter the cloudfront domain name (Alias) (ex: shun-practice.com)"
+    Description: "Enter the cloudfront domain name (Alias) (ex: admin.shun-practice.com)"
     Type: String
   ACMPublicCertificateArn:
     Description: "Enter the ACM public certificate ARN for global region"
@@ -120,7 +120,7 @@ Parameters:
     Description: "Enter the source branch name in GitHub frontend repository. (ex: main)"
     Type: String
   AmplifyDomainName:
-    Description: "Enter the custom Amplify domain name. (Alias) (ex: shun-practice.com)"
+    Description: "Enter the custom Amplify domain name. (Alias) (ex: admin.shun-practice.com)"
     Type: String
   AmplifySubDomainPrefix:
     Description: "Enter the custom Amplify domain name subdomain prefix. (ex: amplify)"
