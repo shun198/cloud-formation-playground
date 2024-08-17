@@ -1,11 +1,7 @@
 name: Deploy CloudFormation Templates to S3
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize, ready_for_review]
-    branches-ignore:
-      - "release/**"
-      - "doc/**"
+  workflow_dispatch
 
 env:
   WORKING_DIRECTORY: templates
@@ -24,10 +20,8 @@ jobs:
           fetch-depth: 0
       - name: Get changed templates
         id: templates
-        # git diff HEAD~1 --name-status | grep templates/ | grep "^M\|^A"
-        # git diff origin/main --name-status | grep templates/ | grep "^M\|^A"
         run: |
-          templates=$(git diff origin/main --name-only | grep ${{ env.WORKING_DIRECTORY }}/)
+          templates=$(git HEAD~1 --name-status | grep ${{ env.WORKING_DIRECTORY }}/ | grep "^M\|^A" | cut -f2)
           echo "templates=$templates" >> $GITHUB_ENV
       # - name: configure aws credentials
       #   if: env.TEMPLATE_CHANGED == 'true'
