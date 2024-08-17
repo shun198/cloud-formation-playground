@@ -24,8 +24,8 @@ jobs:
           fetch-depth: 0
       - name: Get changed templates
         id: templates
-        # git diff HEAD~1 --name-status | grep "templates/" | grep "^M\|^A"
-        # git diff origin/main --name-status | grep "templates/" | grep "^M\|^A"
+        # git diff HEAD~1 --name-status | grep templates/ | grep "^M\|^A"
+        # git diff origin/main --name-status | grep templates/ | grep "^M\|^A"
         run: |
           templates=$(git diff origin/main --name-only | grep ${{ env.WORKING_DIRECTORY }}/)
           echo "templates=$templates" >> $GITHUB_ENV
