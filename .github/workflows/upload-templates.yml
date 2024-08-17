@@ -26,7 +26,7 @@ jobs:
         id: templates
         run: |
           # 変更されたファイルをリストアップして、配列として格納
-          templates=$(git diff -- main --name-only | grep -c ${{ env.WORKING_DIRECTORY }})
+          templates=$(git diff origin/main --name-only | grep -c ${{ env.WORKING_DIRECTORY }}/)
           echo 'templates=${templates}'' >> $GITHUB_ENV
       # - name: configure aws credentials
       #   if: env.TEMPLATE_CHANGED == 'true'
