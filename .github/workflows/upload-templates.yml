@@ -1,9 +1,11 @@
 name: Deploy CloudFormation Templates to S3
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+    branches-ignore:
+      - "release/**"
+      - "doc/**"
 
 env:
   WORKING_DIRECTORY: templates
@@ -20,13 +22,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Check for template changes
+      - name: Get changed templates
+        id: templates
         run: |
-          TEMPLATE_CHANGED=false
-          if git diff main --name-only > 0; then
-            MODEL_CHANGED=true
-          fi
-          echo "TEMPLATE_CHANGED=$TEMPLATE_CHANGED" >> $GITHUB_ENV
+          # 変更されたファイルをリストアップして、配列として格納
+          templates=$(git diff main --name-only | grep -c ${{ env.WORKING_DIRECTORY }})
+          echo 'templates=${templates}'' >> $GITHUB_ENV
       # - name: configure aws credentials
       #   if: env.TEMPLATE_CHANGED == 'true'
       #   run: echo 'template changed'
@@ -35,4 +36,16 @@ jobs:
       #     role-to-assume: arn:aws:iam::XXXXXXXXXXXX:role/github-actions-deploy-s3-bucket
       #     role-session-name: samplerolesession
       #     aws-region: ${{ env.REGION_NAME }}
+      - name: Upload to S3
+        if: ${{ env.changed_files != '' }}
+        run: |
+          # ファイルごとにアップロード
+          for file in ${{ env.changed_files }}; do
+            echo 'file'
+          done
+        # run: |
+        #   # ファイルごとにアップロード
+        #   for file in ${{ env.changed_files }}; do
+        #     aws s3 cp "$file" "s3://your-bucket-name/$file" --acl public-read
+        #   done
 
