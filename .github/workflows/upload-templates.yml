@@ -23,8 +23,15 @@ jobs:
         with:
           fetch-depth: 0
       # git diff HEAD~1 --name-only | grep -c templates/
+      - name: Check how many templates changed
+        id: templates
+        run: |
+          changed_templates=$(git diff HEAD~1 --name-only | grep -c templates/)
+          echo $changed_templates >> "$GITHUB_OUTPUT"
       - name: Upload to S3
-        if: ${{ git diff HEAD~1 --name-only | grep -c templates/ > 0 }}
+        env:
+          changed_templates: ${{ steps.templates.outputs.changed_templates }}
+        if: ${{ changed_templates > 0 }};
         run: |
           templates=$(git diff HEAD~1 --name-status | grep ${{ env.WORKING_DIRECTORY }}/ | grep "^M\|^A" | cut -f2)
           echo $templates
