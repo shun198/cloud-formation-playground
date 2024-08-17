@@ -1,0 +1,37 @@
+name: Deploy CloudFormation Templates to S3
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  WORKING_DIRECTORY: templates
+  REGION_NAME: ap-northeast-1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+    steps:
+      - name: Chekcout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for template changes
+        run: |
+          TEMPLATE_CHANGED=false
+          if git diff --name-only origin/${{ github.base_ref }} | grep -c ${{ env.WORKING_DIRECTORY }}/ > 0; then
+            MODEL_CHANGED=true
+          fi
+          echo "TEMPLATE_CHANGED=$TEMPLATE_CHANGED" >> $GITHUB_ENV
+      - name: configure aws credentials
+        if: env.TEMPLATE_CHANGED == 'true'
+        run: echo 'template changed'
+        # uses: aws-actions/configure-aws-credentials@v2
+        # with:
+        #   role-to-assume: arn:aws:iam::XXXXXXXXXXXX:role/github-actions-deploy-s3-bucket
+        #   role-session-name: samplerolesession
+        #   aws-region: ${{ env.REGION_NAME }}
