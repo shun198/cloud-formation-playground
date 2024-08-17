@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: "WAFv2 Stack For CloudFront"
+Description: "WAFv2 Stack For Admin CloudFront"
 
 # -------------------------------------
 # Metadata
@@ -17,7 +17,8 @@ Metadata:
           default: "WAFv2 Configuration"
         Parameters:
           - WAFLogsPrefix
-          - IPBlackList
+          - Route53HealthCheckerIPs
+          - IPWhiteList
           - CloudFrontDistributionID
           - CWLogsRetentionInDays
 
@@ -45,9 +46,15 @@ Parameters:
     Default: aws-waf-logs
     AllowedValues:
       - aws-waf-logs
-  IPBlackList:
-    Description: "Enter the IP addresses for blacklist separated by commas. (ex: 1.1.1.1/32,2.2.2.2/32)"
+  # ref: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/route-53-ip-addresses.html
+  Route53HealthCheckerIPs:
+    Description: "Enter the IP address for Route53 HealthChecker separated by commas. (ex: 0.0.0.0/32,1.1.1.1/32,2.2.2.2/32)"
     Type: CommaDelimitedList
+    Default: 54.243.31.192/26,54.244.52.192/26,54.245.168.0/26,54.248.220.0/26,54.250.253.192/26,54.251.31.128/26,54.255.254.192/26,15.177.0.0/18
+  IPWhiteList:
+    Description: "Enter the IP addresses for whitelist separated by commas. (ex: 1.1.1.1/32,2.2.2.2/32)"
+    Type: CommaDelimitedList
+    Default: 203.180.184.18/32,203.180.184.19/32
   CloudFrontDistributionID:
     Description: "Enter the CloudFront DistributionID for configuring WAFv2."
     Type: String
@@ -55,12 +62,6 @@ Parameters:
     Description: "Enter the data retention period for CloudWatch Logs. (ex: 30)"
     Type: String
     AllowedValues: [30, 60, 90]
-
-# -------------------------------------
-# Conditions
-# -------------------------------------
-Conditions:
-  HasIPBlackList: !Not [!Equals [!Join [",", !Ref IPBlackList], ""]]
 
 # -------------------------------------
 # Resources
@@ -72,7 +73,7 @@ Resources:
   WAFLogsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub ${WAFLogsPrefix}-for-${ProjectName}-${Environment}-cf
+      BucketName: !Sub ${WAFLogsPrefix}-for-${ProjectName}-${Environment}-admin-cf
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -100,130 +101,57 @@ Resources:
   WebACL:
     Type: AWS::WAFv2::WebACL
     Properties:
-      Name: !Sub ${ProjectName}-${Environment}-cf-waf
+      Name: !Sub ${ProjectName}-${Environment}-admin-cf-waf
       Scope: CLOUDFRONT
       DefaultAction:
-        Allow: {}
+        Block: {}
       VisibilityConfig:
         SampledRequestsEnabled: true
         CloudWatchMetricsEnabled: true
-        MetricName: !Sub ${ProjectName}-${Environment}-cf-waf
+        MetricName: !Sub ${ProjectName}-${Environment}-admin-cf-waf
       Rules:
-        - !If
-          - HasIPBlackList
-          - Name: Custom-IPAddressBlacklist
-            Priority: 10
-            Statement:
-              IPSetReferenceStatement:
-                Arn: !GetAtt IPAddressBlacklistSet.Arn
-            Action:
-              Block: {}
-            VisibilityConfig:
-              SampledRequestsEnabled: true
-              CloudWatchMetricsEnabled: true
-              MetricName: Custom-IPAddressBlacklist
-          - !Ref AWS::NoValue
-        - Name: AWS-AWSManagedRulesAmazonIpReputationList
+        - Name: Custom-IPAddressWhitelist
+          Priority: 10
+          Action:
+            Allow: {}
+          Statement:
+            IPSetReferenceStatement:
+              Arn: !GetAtt IPAddressWhitelist.Arn
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: Custom-IPAddressWhitelist
+        - Name: Custom-Route53IPAddressWhitelist
           Priority: 20
+          Action:
+            Allow: {}
           Statement:
-            ManagedRuleGroupStatement:
-              VendorName: AWS
-              Name: AWSManagedRulesAmazonIpReputationList
-          OverrideAction:
-            Count: {}
+            IPSetReferenceStatement:
+              Arn: !GetAtt Route53IPAddressWhitelist.Arn
           VisibilityConfig:
             SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
-            MetricName: AWSManagedRulesAmazonIpReputationList
-        - Name: AWS-AWSManagedRulesAnonymousIpList
-          Priority: 30
-          Statement:
-            ManagedRuleGroupStatement:
-              VendorName: AWS
-              Name: AWSManagedRulesAnonymousIpList
-              ExcludedRules:
-                - Name: HostingProviderIPList
-          OverrideAction:
-            Count: {}
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: AWSManagedRulesAnonymousIpList
-        - Name: AWS-AWSManagedRulesCommonRuleSet
-          Priority: 40
-          Statement:
-            ManagedRuleGroupStatement:
-              VendorName: AWS
-              Name: AWSManagedRulesCommonRuleSet
-              ExcludedRules:
-                - Name: SizeRestrictions_BODY
-          OverrideAction:
-            Count: {}
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: AWSManagedRulesCommonRuleSet
-        - Name: AWSManagedRulesKnownBadInputsRuleSet
-          OverrideAction:
-            Count: {}
-          Priority: 50
-          Statement:
-            ManagedRuleGroupStatement:
-              Name: AWSManagedRulesKnownBadInputsRuleSet
-              VendorName: AWS
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: AWSManagedRulesKnownBadInputsRuleSet
-        - Name: AWS-AWSManagedRulesLinuxRuleSet
-          Priority: 60
-          Statement:
-            ManagedRuleGroupStatement:
-              VendorName: AWS
-              Name: AWSManagedRulesLinuxRuleSet
-          OverrideAction:
-            Count: {}
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: AWSManagedRulesLinuxRuleSet
-        - Name: AWS-AWSManagedRulesUnixRuleSet
-          Priority: 70
-          Statement:
-            ManagedRuleGroupStatement:
-              VendorName: AWS
-              Name: AWSManagedRulesUnixRuleSet
-          OverrideAction:
-            Count: {}
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: AWSManagedRulesUnixRuleSet
-        - Name: AWS-AWSManagedRulesSQLiRuleSet
-          Priority: 80
-          Statement:
-            ManagedRuleGroupStatement:
-              VendorName: AWS
-              Name: AWSManagedRulesSQLiRuleSet
-          OverrideAction:
-            Count: {}
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: AWSManagedRulesSQLiRuleSet
+            MetricName: Custom-Route53IPAddressWhitelist
 
   # -------------------------------------
   # WAFv2 IP Set
   # -------------------------------------
-  IPAddressBlacklistSet:
-    Condition: HasIPBlackList
+  IPAddressWhitelist:
     Type: AWS::WAFv2::IPSet
     Properties:
-      Name: !Sub Custom-IPAddressBlacklist-for-${ProjectName}-${Environment}-cf-waf
+      Name: !Sub Custom-IPAddressWhitelist-for-${ProjectName}-${Environment}-admin-cf-waf
       Description: "This List of IP addresses unaccessible to the application."
       Scope: CLOUDFRONT
       IPAddressVersion: IPV4
-      Addresses: !Ref IPBlackList
+      Addresses: !Ref IPWhiteList
+  Route53IPAddressWhitelist:
+    Type: AWS::WAFv2::IPSet
+    Properties:
+      Name: !Sub Custom-Route53IPAddressWhitelist-for-${ProjectName}-${Environment}-admin-cf-waf
+      Description: "This List of IP addresses that are used for AWS Route53 Health Checks."
+      Scope: CLOUDFRONT
+      IPAddressVersion: IPV4
+      Addresses: !Ref Route53HealthCheckerIPs
 
   # -------------------------------------
   # CloudWatch Logs Log Group (WAFv2)
@@ -231,7 +159,7 @@ Resources:
   WAFLogsDeliveryStreamLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub ${WAFLogsPrefix}-for-${ProjectName}-${Environment}-cf-${CloudFrontDistributionID}
+      LogGroupName: !Sub ${WAFLogsPrefix}-for-${ProjectName}-${Environment}-admin-cf-${CloudFrontDistributionID}
       RetentionInDays: !Ref CWLogsRetentionInDays
       Tags:
         - Key: ProjectName
@@ -269,7 +197,7 @@ Resources:
   WAFv2ForCFDeliveryStream:
     Type: AWS::KinesisFirehose::DeliveryStream
     Properties:
-      DeliveryStreamName: !Sub s3-delivery-stream-for-${ProjectName}-${Environment}-cf-${CloudFrontDistributionID}
+      DeliveryStreamName: !Sub s3-delivery-stream-${ProjectName}-${Environment}-admin-cf-${CloudFrontDistributionID}
       DeliveryStreamEncryptionConfigurationInput:
         KeyType: AWS_OWNED_CMK
       ExtendedS3DestinationConfiguration:
@@ -284,8 +212,8 @@ Resources:
           Enabled: false
         CloudWatchLoggingOptions:
           Enabled: true
-          LogGroupName: !Sub /aws/kinesisfirehose/s3-delivery-streams/${ProjectName}-${Environment}-cf-waf
-          LogStreamName: !Sub s3-delivery-waf-${ProjectName}-${Environment}-cf-${CloudFrontDistributionID}
+          LogGroupName: !Sub /aws/kinesisfirehose/s3-delivery-streams/${ProjectName}-${Environment}-admin-cf-waf
+          LogStreamName: !Sub s3-delivery-waf-${ProjectName}-${Environment}-admin-cf-${CloudFrontDistributionID}
       Tags:
         - Key: ProjectName
           Value: !Ref ProjectName
@@ -299,7 +227,7 @@ Resources:
   CloudWatchLogsRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub CWLogsRoleForKinesisFirehose-${ProjectName}-${Environment}-cf-waf
+      RoleName: !Sub CWLogsRoleForKinesisFirehose-${ProjectName}-${Environment}-admin-cf-waf
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -313,7 +241,7 @@ Resources:
   CloudWatchLogsRolePolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Sub CWLogsAccessForKinesisFirehose-${ProjectName}-${Environment}-cf-waf
+      PolicyName: !Sub CWLogsAccessForKinesisFirehose-${ProjectName}-${Environment}-admin-cf-waf
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -334,7 +262,7 @@ Resources:
   KinesisDataFirehoseRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub KinesisFirehoseRoleForS3-${ProjectName}-${Environment}-cf-waf
+      RoleName: !Sub KinesisFirehoseRoleForS3-${ProjectName}-${Environment}-admin-cf-waf
       AssumeRolePolicyDocument:
         Statement:
           - Effect: Allow
@@ -348,7 +276,7 @@ Resources:
                 sts:ExternalId: !Ref AWS::AccountId
       Path: /service-role/
       Policies:
-        - PolicyName: !Sub KinesisFirehoseAccessForS3-${ProjectName}-${Environment}-cf-waf
+        - PolicyName: !Sub KinesisFirehoseAccessForS3-${ProjectName}-${Environment}-admin-cf-waf
           PolicyDocument:
             Statement:
               - Effect: Allow
@@ -373,7 +301,7 @@ Resources:
 # Outputs
 # -------------------------------------
 Outputs:
-  CloudFrontWebACLArn:
+  AdminCloudFrontWebACLArn:
     Value: !GetAtt WebACL.Arn
   WAFLogsBucketArn:
     Value: !GetAtt WAFLogsBucket.Arn
