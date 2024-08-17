@@ -1,0 +1,89 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "S3 Bucket Stack For Backend"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name (ex: my-project)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be enter"
+    Default: my-project
+  Environment:
+    Description: "Select the environment"
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment must be select"
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # リスト投入ファイル保存用 S3 Bucket
+  ListFileStorageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      BucketName: !Sub ${ProjectName}-${Environment}-list-file
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Suspended
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpiresAfter10DaysForOneOlderVersion
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NewerNoncurrentVersions: 1
+              NoncurrentDays: 10
+  ListFileStorageBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ListFileStorageBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Deny
+            Principal: "*"
+            Action:
+              - s3:*
+            Resource:
+              - !Sub arn:aws:s3:::${ProjectName}-${Environment}-list-file
+              - !Sub arn:aws:s3:::${ProjectName}-${Environment}-list-file/*
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  ListFileStorageBucket:
+    Value: !Ref ListFileStorageBucket
+  ListFileStorageBucketArn:
+    Value: !GetAtt ListFileStorageBucket.Arn
+  ListFileStorageBucketDomainName:
+    Value: !GetAtt ListFileStorageBucket.RegionalDomainName

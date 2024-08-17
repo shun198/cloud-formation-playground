@@ -84,8 +84,17 @@ Parameters:
     Description: "Enter the Lambda function runtime."
     Type: String
     AllowedValues:
-      - python3.12
-    Default: python3.12
+      - python3.11
+    Default: python3.11
+  SSMParameterNameForInternalBackSrvUrl:
+    Description: "Enter the Systems Manager Parameter Store name defined as 'INTERNAL_BACK_SRV_URL' (ex: /my-project/dev/back/INTERNAL_BACK_SRV_URL)"
+    Type: String
+  SSMParameterNameForLambdaToken:
+    Description: "Enter the Systems Manager Parameter Store name defined as 'LAMBDA_TOKEN' (ex: /my-project/dev/back/LAMBDA_TOKEN)"
+    Type: String
+  UploadCSVQueueArn:
+    Description: "Enter the SQS queue ARN (ex: arn:aws:sqs:<aws_region>:<aws_account_id>:my-project-dev-upload-csv-sqs.fifo)"
+    Type: String
 # -------------------------------------
 # Resources
 # -------------------------------------
@@ -105,6 +114,10 @@ Resources:
       Code:
         S3Bucket: !Ref LambdaArchiveBucketName
         S3Key: !Ref LambdaArchiveBucketObjectKey
+      Environment:
+        Variables:
+          INTERNAL_BACK_SRV_URL: !Ref SSMParameterNameForInternalBackSrvUrl
+          LAMBDA_TOKEN: !Ref SSMParameterNameForLambdaToken
       Layers:
         - !Ref ParametersSecretsLambdaExtensionArn
       FunctionName: !Sub ${ProjectName}-${Environment}-upload-csv-api-call
@@ -115,6 +128,22 @@ Resources:
       Runtime: !Ref Runtime
       Timeout: !Ref Timeout
       PackageType: Zip
+  UploadCSVLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt UploadCSVLambda.Arn
+      Principal: cloudformation.amazonaws.com
+
+  # -------------------------------------
+  # Lambda Trigger
+  # -------------------------------------
+  UploadCSVLambdaTrigger:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      FunctionName: !GetAtt UploadCSVLambda.Arn
+      BatchSize: 1
+      EventSourceArn: !Ref UploadCSVQueueArn
 
   # -------------------------------------
   # IAM Role
@@ -128,9 +157,11 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service:
-                - lambda.amazonaws.com
+              Service: lambda.amazonaws.com
             Action: sts:AssumeRole
+      Path: /service-role/
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole
       Policies:
         - PolicyName: !Sub LambdaAccess-${ProjectName}-${Environment}-upload-csv
           PolicyDocument:
