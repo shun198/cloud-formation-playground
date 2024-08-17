@@ -26,6 +26,7 @@ jobs:
         id: templates
         run: |
           templates=$(git diff HEAD~1 --name-status | grep ${{ env.WORKING_DIRECTORY }}/ | grep "^M\|^A" | cut -f2)
+          echo $templates
           for template in $templates; do
             echo $template
           done
