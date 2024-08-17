@@ -1,13 +1,12 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: "Security Group Stack"
-# カスタムマクロの有効化
-Transform: PyPlate
 
 # -------------------------------------
 # Metadata
 # -------------------------------------
 Metadata:
   AWS::CloudFormation::Interface:
+    # パラメータの並び順
     ParameterGroups:
       - Label:
           default: "Project Configuration"
@@ -18,8 +17,6 @@ Metadata:
           default: "Security Group Configuration"
         Parameters:
           - VPCID
-          - ManagementIPAddress
-          - ManagementIPDescription
 
 # -------------------------------------
 # Parameters
@@ -29,25 +26,19 @@ Parameters:
     Description: "Enter the project name. (ex: my-project)"
     Type: String
     MinLength: 1
-    ConstraintDescription: "ProjectName must be enter"
+    ConstraintDescription: "ProjectName must be entered."
     Default: my-project
   Environment:
-    Description: "Select the environment"
+    Description: "Select the environment name."
     Type: String
     AllowedValues:
       - dev
       - stg
       - prd
-    ConstraintDescription: "Environment must be select"
+    ConstraintDescription: "Environment name must be selected."
   VPCID:
-    Description: "Enter the VPC ID for create security groups"
+    Description: "Enter the VPC ID for create security groups."
     Type: AWS::EC2::VPC::Id
-  ManagementIPAddress:
-    Description: "Enter the IP addresses for management separated by commas (ex: 0.0.0.0/32,1.1.1.1/32)"
-    Type: CommaDelimitedList
-  ManagementIPDescription:
-    Description: "Enter the descriptions for the management IP addresses separated by commas (ex: from xxxx,from xxxx)"
-    Type: CommaDelimitedList
 
 # -------------------------------------
 # Resources
@@ -57,25 +48,12 @@ Resources:
   ALBSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: !Sub ${ProjectName}-${Environment}-alb-for-fargate-sg
+      GroupName: !Sub ${ProjectName}-${Environment}-alb-ag
       GroupDescription: "Security Group For ALB"
       VpcId: !Ref VPCID
-      SecurityGroupIngress: |
-          #!PyPlate
-          import json
-          output = [
-              {
-                "IpProtocol": "tcp",
-                "FromPort": 8080,
-                "ToPort": 8080,
-                "CidrIp": ip,
-                "Description": desc
-              }
-              for ip, desc in zip(params["ManagementIPAddress"], params["ManagementIPDescription"])
-          ]
       Tags:
         - Key: Name
-          Value: !Sub ${ProjectName}-${Environment}-alb-for-fargate-sg
+          Value: !Sub ${ProjectName}-${Environment}-alb-sg
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
@@ -90,31 +68,7 @@ Resources:
       CidrIp: 0.0.0.0/0
       Description: "from client"
 
-  # For Internal ALB
-  InternalALBSG:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: !Sub ${ProjectName}-${Environment}-internal-alb-sg
-      GroupDescription: "Security Group For Internal ALB"
-      VpcId: !Ref VPCID
-      Tags:
-        - Key: Name
-          Value: !Sub ${ProjectName}-${Environment}-internal-alb-sg
-        - Key: ProjectName
-          Value: !Ref ProjectName
-        - Key: Environment
-          Value: !Ref Environment
-  InternalALBSGIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      GroupId: !Ref InternalALBSG
-      IpProtocol: tcp
-      FromPort: 443
-      ToPort: 443
-      SourceSecurityGroupId: !GetAtt LambdaSGForInternalALB.GroupId
-      Description: "from lambda"
-
-  # For Fargate
+  # For ECS Fargate
   FargateSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -174,14 +128,13 @@ Resources:
       ToPort: 8080
       SourceSecurityGroupId: !Ref ALBSG
       Description: "from alb (for blue/green deployment)"
-
-  # For RDS (PostgreSQL)
-  RDSForPostgreSQLSG:
+  # For RDS (MySQL)
+  RDSForMySQLSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
       VpcId: !Ref VPCID
       GroupName: !Sub ${ProjectName}-${Environment}-rds-sg
-      GroupDescription: "Security Group For RDS (PostgreSQL)"
+      GroupDescription: "Security Group For RDS (MySQL)"
       Tags:
         - Key: Name
           Value: !Sub ${ProjectName}-${Environment}-rds-sg
@@ -189,22 +142,22 @@ Resources:
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
-  RDSForPostgreSQLSGIngress:
+  RDSForMySQLSGIngress:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      GroupId: !Ref RDSForPostgreSQLSG
+      GroupId: !Ref RDSForMySQLSG
       IpProtocol: tcp
-      FromPort: 5432
-      ToPort: 5432
+      FromPort: 3306
+      ToPort: 3306
       SourceSecurityGroupId: !Ref FargateSG
       Description: "from fargate"
 
-  # For Lambda (Internal ALB)
-  LambdaSGForInternalALB:
+  # For Lambda
+  LambdaSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: !Sub ${ProjectName}-${Environment}-lambda-for-internal-alb-sg
-      GroupDescription: "Security Group For Lambda (Internal ALB)"
+      GroupDescription: "Security Group For Lambda"
       VpcId: !Ref VPCID
       Tags:
         - Key: Name
@@ -213,6 +166,36 @@ Resources:
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
+  LambdaSGEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref LambdaSG
+      IpProtocol: -1
+      CidrIp: 0.0.0.0/0
+
+# Internal ALB
+  InternalALBSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${ProjectName}-${Environment}-internal-alb-sg
+      GroupDescription: "Security Group For Internal ALB"
+      VpcId: !Ref VPCID
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${Environment}-internal-alb-sg
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  InternalALBSGIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref InternalALBSG
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourceSecurityGroupId: !GetAtt LambdaSG.GroupId
+      Description: "from lambda"
 
 # -------------------------------------
 # Outputs
@@ -221,15 +204,15 @@ Outputs:
   ALBSG:
     Description: "Security Group For ALB"
     Value: !Ref ALBSG
+  FargateSG:
+    Description: "Security Group For ECS Fargate"
+    Value: !Ref FargateSG
+  RDSForMySQLSG:
+    Description: "Security Group For RDS (MySQL)"
+    Value: !Ref RDSForMySQLSG
+  LambdaSG:
+    Description: "Security Group For Lambda"
+    Value: !Ref LambdaSG
   InternalALBSG:
     Description: "Security Group For Internal ALB"
     Value: !Ref InternalALBSG
-  FargateSG:
-    Description: "Security Group For ECS Fargate with ALB"
-    Value: !Ref FargateSG
-  RDSForPostgreSQLSG:
-    Description: "Security Group For RDS (PostgresSQL)"
-    Value: !Ref RDSForPostgreSQLSG
-  LambdaSGForInternalALB:
-    Description: "Security Group Lambda For Internal ALB"
-    Value: !Ref LambdaSGForInternalALB
