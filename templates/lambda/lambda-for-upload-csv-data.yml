@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: "Lambda Function Stack For Data Deletion API Call"
+Description: "Lambda Function Stack For Upload CSV API Call"
 
 # -------------------------------------
 # Metadata
@@ -34,7 +34,7 @@ Parameters:
     Description: "Enter the project name. (ex: my-project)"
     Type: String
     MinLength: 1
-    ConstraintDescription: "ProjectName must be enter."
+    ConstraintDescription: "ProjectName must be entered."
     Default: my-project
   Environment:
     Description: "Select the environment."
@@ -43,7 +43,7 @@ Parameters:
       - dev
       - stg
       - prd
-    ConstraintDescription: "Environment must be select."
+    ConstraintDescription: "Environment must be selected."
   LambdaProtectedSubnet1:
     Description: "Enter the Subnet ID for Lambda in the selected VPC."
     Type: AWS::EC2::Subnet::Id
@@ -108,7 +108,7 @@ Resources:
       Layers:
         - !Ref ParametersSecretsLambdaExtensionArn
       FunctionName: !Sub ${ProjectName}-${Environment}-upload-csv-api-call
-      Description: !Sub "S3内のCSVファイルのデータをアップロードする Lambda 関数"
+      Description: "S3内のCSVファイルのデータをアップロードする Lambda 関数"
       Handler: !Ref Handler
       MemorySize: !Ref MemorySize
       Role: !GetAtt LambdaRoleForUploadCSV.Arn
