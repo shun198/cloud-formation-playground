@@ -1,7 +1,11 @@
 name: Deploy CloudFormation Templates to S3
 
 on:
-  workflow_dispatch
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+    branches-ignore:
+      - "release/**"
+      - "doc/**"
 
 env:
   WORKING_DIRECTORY: templates
