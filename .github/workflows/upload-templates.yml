@@ -35,14 +35,14 @@ jobs:
       #     role-to-assume: arn:aws:iam::XXXXXXXXXXXX:role/github-actions-deploy-s3-bucket
       #     role-session-name: samplerolesession
       #     aws-region: ${{ env.REGION_NAME }}
-      - name: Upload to S3
-        # if: ${{ env.changed_files != '' }}
-        run: |
-          echo ${{ env.templates }}
-          # ファイルごとにアップロード
-          for template in ${{ env.templates }}; do
-            echo $template
-          done
+      # - name: Upload to S3
+      #   # if: ${{ env.changed_files != '' }}
+      #   run: |
+      #     echo ${{ env.templates }}
+      #     # ファイルごとにアップロード
+      #     for template in ${{ env.templates }}; do
+      #       echo $template
+      #     done
         # run: |
         #   # ファイルごとにアップロード
         #   for file in ${{ env.changed_files }}; do
