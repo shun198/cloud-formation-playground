@@ -79,9 +79,9 @@ Parameters:
     Default: gp3
     AllowedValues: [gp3, io1]
   RDSDBName:
-    Description: "Enter the database name (default: factor_flow_master_development)"
+    Description: "Enter the database name (default: shun198_development)"
     Type: String
-    Default: factor_flow_master_development
+    Default: shun198_development
   RDSDBMasterUserName:
     Description: "Enter the master username"
     Type: String

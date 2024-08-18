@@ -262,11 +262,11 @@ Parameters:
   DomainNameForAPI:
     Description: "Enter the domain name for backend API."
     Type: String
-    Default: api.dev.shun-practice.com
+    Default: api.shun-practice.com
   DomainNameForInternal:
     Description: "Enter the domain name for internal backend API."
     Type: String
-    Default: internal.dev.shun-practice.com
+    Default: internal.shun-practice.com
   PrivateHostZoneID:
     Description: "Select the Route 53 private hosted zone ID."
     Type: AWS::Route53::HostedZone::Id
