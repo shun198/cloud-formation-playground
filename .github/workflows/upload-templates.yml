@@ -23,7 +23,7 @@ jobs:
       - name: Check how many templates changed
         id: templates
         run: |
-          changed_templates=$(git diff HEAD~1 --name-only | grep -c templates/)
+          changed_templates=$(git diff --name-only | grep -c templates/)
           echo $changed_templates
           echo changed_templates=$changed_templates >> "$GITHUB_OUTPUT"
       # - name: configure aws credentials
@@ -33,10 +33,11 @@ jobs:
       #     role-to-assume: arn:aws:iam::XXXXXXXXXXXX:role/github-actions-deploy-s3-bucket
       #     role-session-name: upload-template-dev
       #     aws-region: ${{ env.REGION_NAME }}
+      # if: steps.check_something.outcome == 'success'
       - name: Upload to S3
         if: ${{ steps.templates.outputs.changed_templates > 0 }};
         run: |
-          templates=$(git diff HEAD~1 --name-status | grep ${{ env.WORKING_DIRECTORY }}/ | grep "^M\|^A" | cut -f2)
+          templates=$(git diff --name-status | grep ${{ env.WORKING_DIRECTORY }}/ | grep "^M\|^A" | cut -f2)
           echo $templates
           for template in $templates; do
             echo $template
