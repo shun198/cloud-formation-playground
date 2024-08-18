@@ -23,7 +23,7 @@ jobs:
       - name: Check how many templates changed
         id: templates
         run: |
-          changed_templates=$(git diff HEAD^ --name-status | grep -c ${{ env.WORKING_DIRECTORY }}/ | grep "^M\|^A")
+          changed_templates=$(git diff HEAD^ --name-only | grep -c templates/ | grep "^M\|^A")
           echo $changed_templates
           echo changed_templates=$changed_templates >> "$GITHUB_OUTPUT"
       # - name: configure aws credentials
