@@ -18,13 +18,12 @@ jobs:
       - name: Chekcout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
       # https://docs.github.com/ja/actions/writing-workflows/choosing-what-your-workflow-does/workflow-commands-for-github-actions#example-of-setting-an-output-parameter
-      # changed_templates=$(git diff HEAD^ --name-only | grep -c templates/)
       - name: Check how many templates changed
         id: templates
         run: |
-          changed_templates=$(git diff --name-only | grep -c templates/)
+          changed_templates=$(git diff HEAD^ --name-only | grep -c templates/)
           echo $changed_templates
           echo changed_templates=$changed_templates >> "$GITHUB_OUTPUT"
       # - name: configure aws credentials
