@@ -40,9 +40,9 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name. (ex: my-project)"
+    Description: "Enter the project name. (ex: shun198)"
     Type: String
-    Default: my-project
+    Default: shun198
     ConstraintDescription: "ProjectName must be entered."
     MinLength: 1
   Environment:
@@ -245,7 +245,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          # output-image: my-project-dev-pub-alb-1a
+          # output-image: shun198-dev-pub-alb-1a
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-pub-alb"
@@ -263,7 +263,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          # output-image: my-project-dev-pub-alb-1c
+          # output-image: shun198-dev-pub-alb-1c
           Value: !Join 
             - "-"
             - - !Sub "${ProjectName}-${Environment}-pub-alb"
@@ -282,7 +282,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          # output-image: my-project-dev-pub-natgw-1a
+          # output-image: shun198-dev-pub-natgw-1a
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-pub-natgw"
@@ -300,7 +300,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          # output-image: my-project-dev-pub-natgw-1c
+          # output-image: shun198-dev-pub-natgw-1c
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-pub-natgw"
@@ -322,7 +322,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          # output-image: my-project-dev-prot-ecs-1a
+          # output-image: shun198-dev-prot-ecs-1a
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-prot-ecs"
@@ -340,7 +340,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          # output-image: my-project-dev-prot-ecs-1c
+          # output-image: shun198-dev-prot-ecs-1c
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-prot-ecs"
@@ -359,7 +359,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          # output-image: my-project-dev-prot-lambda-1a
+          # output-image: shun198-dev-prot-lambda-1a
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-prot-lambda"
@@ -377,7 +377,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          # output-image: my-project-dev-prot-lambda-1c
+          # output-image: shun198-dev-prot-lambda-1c
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-prot-lambda"
@@ -399,7 +399,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          # output-image: my-project-dev-priv-rds-1a
+          # output-image: shun198-dev-priv-rds-1a
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-priv-rds"
@@ -417,7 +417,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          # output-image: my-project-dev-priv-rds-1c
+          # output-image: shun198-dev-priv-rds-1c
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-priv-rds"
@@ -436,7 +436,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          # output-image: my-project-dev-priv-internal-alb-1a
+          # output-image: shun198-dev-priv-internal-alb-1a
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-priv-internal-alb"
@@ -454,7 +454,7 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          # output-image: my-project-dev-priv-internal-alb-1c
+          # output-image: shun198-dev-priv-internal-alb-1c
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-priv-internal-alb"
@@ -515,7 +515,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          # output-image: my-project-dev-prot-rtb-1a
+          # output-image: shun198-dev-prot-rtb-1a
           Value: !Join
             - "-"
             - - !Sub ${ProjectName}-${Environment}-prot-rtb
@@ -537,7 +537,7 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          # output-image: my-project-dev-prot-rtb-1c
+          # output-image: shun198-dev-prot-rtb-1c
           Value: !Join
             - "-"
             - - !Sub ${ProjectName}-${Environment}-prot-rtb
@@ -623,7 +623,7 @@ Resources:
       Domain: vpc
       Tags:
         - Key: Name
-          # output-image: my-project-dev-natgw-eip-1a
+          # output-image: shun198-dev-natgw-eip-1a
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-natgw-eip"
@@ -639,7 +639,7 @@ Resources:
       SubnetId: !Ref NATPublicSubnet1
       Tags:
         - Key: Name
-          # output-image: my-project-dev-natgw-1a
+          # output-image: shun198-dev-natgw-1a
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-natgw"
@@ -655,7 +655,7 @@ Resources:
       Domain: vpc
       Tags:
         - Key: Name
-          # output-image: my-project-dev-natgw-eip-1c
+          # output-image: shun198-dev-natgw-eip-1c
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-natgw-eip"
@@ -672,7 +672,7 @@ Resources:
       SubnetId: !Ref NATPublicSubnet2
       Tags:
         - Key: Name
-          # output-image: my-project-dev-natgw-1c
+          # output-image: shun198-dev-natgw-1c
           Value: !Join
             - "-"
             - - !Sub "${ProjectName}-${Environment}-natgw"

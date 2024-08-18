@@ -31,11 +31,11 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name. (ex: my-project)"
+    Description: "Enter the project name. (ex: shun198)"
     Type: String
     MinLength: 1
     ConstraintDescription: "ProjectName must be entered."
-    Default: my-project
+    Default: shun198
   Environment:
     Description: "Select the environment name."
     Type: String
@@ -45,25 +45,25 @@ Parameters:
       - prd
     ConstraintDescription: "Environment name must be selected."
   BackendAppLogGroupName:
-    Description: "Enter the CloudWatch Logs log group name of backend application for Kinesis Data Firehose Delivery Stream. (ex: /ecs/my-project/<environment>/back/django)"
+    Description: "Enter the CloudWatch Logs log group name of backend application for Kinesis Data Firehose Delivery Stream. (ex: /ecs/shun198/<environment>/back/django)"
     Type: String
   BackendWebLogGroupName:
-    Description: "Enter the CloudWatch Logs log group name of backend web server for Kinesis Data Firehose Delivery Stream. (ex: /ecs/my-project/<environment>/back/nginx)"
+    Description: "Enter the CloudWatch Logs log group name of backend web server for Kinesis Data Firehose Delivery Stream. (ex: /ecs/shun198/<environment>/back/nginx)"
     Type: String
   BackendAppLogsBucketName:
-    Description: "Enter the destination S3 bucket name of backend application for Kinesis Data Firehose Delivery Stream output. (ex: my-project-<environment>-back-django-logs)"
+    Description: "Enter the destination S3 bucket name of backend application for Kinesis Data Firehose Delivery Stream output. (ex: shun198-<environment>-back-django-logs)"
     Type: String
   BackendWebLogsBucketName:
-    Description: "Enter the destination S3 bucket name of backend web server for Kinesis Data Firehose Delivery Stream output. (ex: my-project-<environment>-back-nginx-logs)"
+    Description: "Enter the destination S3 bucket name of backend web server for Kinesis Data Firehose Delivery Stream output. (ex: shun198-<environment>-back-nginx-logs)"
     Type: String
   PrefixForKinesisDataFirehose:
     Description: "Enter the prefix for Kinesis Data Firehose Delivery Stream."
     Type: String
   CloudWatchLoggingOptionsLogGroupNameForApp:
-    Description: "Enter the CloudWatch Logs log group name for Kinesis Data Firehose delivery stream execution logs of application. (ex: /aws/kinesisfirehose/s3-delivery-stream/my-project/<environment>/back/django)"
+    Description: "Enter the CloudWatch Logs log group name for Kinesis Data Firehose delivery stream execution logs of application. (ex: /aws/kinesisfirehose/s3-delivery-stream/shun198/<environment>/back/django)"
     Type: String
   CloudWatchLoggingOptionsLogGroupNameForWeb:
-    Description: "Enter the CloudWatch Logs log group name for Kinesis Data Firehose delivery stream execution logs of web server. (ex: /aws/kinesisfirehose/s3-delivery-stream/my-project/<environment>/back/nginx)"
+    Description: "Enter the CloudWatch Logs log group name for Kinesis Data Firehose delivery stream execution logs of web server. (ex: /aws/kinesisfirehose/s3-delivery-stream/shun198/<environment>/back/nginx)"
     Type: String
 
 # -------------------------------------

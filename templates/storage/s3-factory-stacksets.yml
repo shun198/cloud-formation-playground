@@ -19,11 +19,11 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name. (ex: my-project)"
+    Description: "Enter the project name. (ex: shun198)"
     Type: String
     MinLength: 1
     ConstraintDescription: "ProjectName must be enter."
-    Default: my-project
+    Default: shun198
   Environment:
     Description: "Select the environment."
     Type: String

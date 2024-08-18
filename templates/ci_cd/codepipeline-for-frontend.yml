@@ -32,11 +32,11 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: 'Enter the project name (ex: my-project)'
+    Description: 'Enter the project name (ex: shun198)'
     Type: String
     MinLength: 1
     ConstraintDescription: 'ProjectName must be enter'
-    Default: my-project
+    Default: shun198
   Environment:
     Description: 'Select the environment'
     Type: String
@@ -52,10 +52,10 @@ Parameters:
       - develop
       - main
   SSMParameterStoreForBackendServerURL:
-    Description: 'Enter the parameter store name with backend server URL for API connection (ex: /my-project/back/dev/NEXT_PUBLIC_BACK_SRV_URL)'
+    Description: 'Enter the parameter store name with backend server URL for API connection (ex: /shun198/back/dev/NEXT_PUBLIC_BACK_SRV_URL)'
     Type: String
   CodeDeployTargetBucketName:
-    Description: 'Enter the S3 bucket name for CodeDeploy deployment target (ex: my-project-dev-assets-with-origin-access-control-XXXXXXXX)'
+    Description: 'Enter the S3 bucket name for CodeDeploy deployment target (ex: shun198-dev-assets-with-origin-access-control-XXXXXXXX)'
     Type: String
   CodeStarConnectionArn:
     Description: 'Enter the CodeStar connection ARN. (ex: arn:aws:codestar-connections:<aws_region>:<aws_account_id>:connection/<connection_id>)'

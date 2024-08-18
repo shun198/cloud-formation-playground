@@ -118,10 +118,10 @@ Parameters:
   # -------------------------------------
   ProjectName:
     Type: String
-    Description: "Enter the project name. (ex: my-project)"
+    Description: "Enter the project name. (ex: shun198)"
     MinLength: 1
     ConstraintDescription: "ProjectName must be entered."
-    Default: my-project
+    Default: shun198
   Environment:
     Type: String
     Description: "Select a environment name."
@@ -245,11 +245,11 @@ Parameters:
   BackendAppLogGroupName:
     Description: "CloudWatch Logs log-group name for application."
     Type: String
-    Default: /ecs/my-project/dev/back/django
+    Default: /ecs/shun198/dev/back/django
   BackendWebLogGroupName:
     Description: "CloudWatch Logs log-group name for webserver."
     Type: String
-    Default: /ecs/my-project/dev/back/nginx
+    Default: /ecs/shun198/dev/back/nginx
   LogRetentionInDays:
     Description: "Enter the data retention period."
     Type: String
@@ -350,7 +350,7 @@ Parameters:
     Description: "Enter the database name (ex: factor_flow_master_development)"
     Type: String
   RDSDBMasterUserName:
-    Description: "Enter the master username, following your company's naming rule (ref: https://pj100.esa.io/posts/9475)"
+    Description: "Enter the master username (postgres)"
     Type: String
     NoEcho: true
     MinLength: 1
@@ -358,7 +358,7 @@ Parameters:
     AllowedPattern: "^[a-zA-Z][a-zA-Z_0-9]*"
     ConstraintDescription: "Must begin with a letter and contain only alphanumeric characters"
   RDSDBMasterUserPassword:
-    Description: "Enter the master password"
+    Description: "Enter the master password (postgres)"
     Type: String
     NoEcho: true
     MinLength: 10
@@ -414,20 +414,20 @@ Parameters:
   BackendAppLogsBucketName:
     Description: "Enter the destination S3 bucket name of backend application for Kinesis Data Firehose Delivery Stream output."
     Type: String
-    Default: my-project-dev-back-django-logs
+    Default: shun198-dev-back-django-logs
   BackendWebLogsBucketName:
     Description: "Enter the destination S3 bucket name of backend web server for Kinesis Data Firehose Delivery Stream output."
     Type: String
-    Default: my-project-dev-back-nginx-logs
+    Default: shun198-dev-back-nginx-logs
   PrefixForKinesisDataFirehose:
     Description: "Enter the prefix for Kinesis Data Firehose Delivery Stream."
     Type: String
     Default: ""
   CloudWatchLoggingOptionsLogGroupNameForApp:
-    Description: "Enter the CloudWatch Logs log group name for Kinesis Data Firehose delivery stream execution logs of application. (ex: /aws/kinesisfirehose/s3-delivery-stream/my-project/dev/back/django)"
+    Description: "Enter the CloudWatch Logs log group name for Kinesis Data Firehose delivery stream execution logs of application. (ex: /aws/kinesisfirehose/s3-delivery-stream/shun198/dev/back/django)"
     Type: String
   CloudWatchLoggingOptionsLogGroupNameForWeb:
-    Description: "Enter the CloudWatch Logs log group name for Kinesis Data Firehose delivery stream execution logs of web server. (ex: /aws/kinesisfirehose/s3-delivery-stream/my-project/dev/back/nginx)"
+    Description: "Enter the CloudWatch Logs log group name for Kinesis Data Firehose delivery stream execution logs of web server. (ex: /aws/kinesisfirehose/s3-delivery-stream/shun198/dev/back/nginx)"
     Type: String
 
   # -------------------------------------

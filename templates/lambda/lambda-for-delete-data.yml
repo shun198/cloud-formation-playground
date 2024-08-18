@@ -40,11 +40,11 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name. (ex: my-project)"
+    Description: "Enter the project name. (ex: shun198)"
     Type: String
     MinLength: 1
     ConstraintDescription: "ProjectName must be enter."
-    Default: my-project
+    Default: shun198
   Environment:
     Description: "Select the environment."
     Type: String
@@ -99,10 +99,10 @@ Parameters:
       - python3.11
     Default: python3.11
   SSMParameterNameForInternalBackSrvUrl:
-    Description: "Enter the Systems Manager parameter store name defined as 'INTERNAL_BACK_SRV_URL'. (ex: /my-project/dev/back/INTERNAL_BACK_SRV_URL)"
+    Description: "Enter the Systems Manager parameter store name defined as 'INTERNAL_BACK_SRV_URL'. (ex: /shun198/dev/back/INTERNAL_BACK_SRV_URL)"
     Type: String
   SSMParameterNameForLambdaToken:
-    Description: "Enter the Systems Manager parameter store name defined as 'LAMBDA_TOKEN'. (ex: /my-project/dev/back/LAMBDA_TOKEN)"
+    Description: "Enter the Systems Manager parameter store name defined as 'LAMBDA_TOKEN'. (ex: /shun198/dev/back/LAMBDA_TOKEN)"
     Type: String
 
 # -------------------------------------

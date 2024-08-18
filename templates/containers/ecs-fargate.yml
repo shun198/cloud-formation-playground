@@ -43,11 +43,11 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name. (ex: my-project)"
+    Description: "Enter the project name. (ex: shun198)"
     Type: String
     MinLength: 1
     ConstraintDescription: "ProjectName must be enter."
-    Default: my-project
+    Default: shun198
   Environment:
     Description: "Select the environment."
     Type: String
@@ -57,9 +57,9 @@ Parameters:
       - prd
     Default: dev
   ECSClusterName:
-    Description: "Enter the ECS cluster name. (ex: my-project-dev-cluster)"
+    Description: "Enter the ECS cluster name. (ex: shun198-dev-cluster)"
     Type: String
-    Default: my-project-dev-cluster
+    Default: shun198-dev-cluster
   ECSPublicSubnet1:
     Description: "Enter the Subnet ID for ECS in the selected VPC."
     Type: AWS::EC2::Subnet::Id
@@ -122,11 +122,11 @@ Parameters:
   AppLogGroupName:
     Description: "Enter the CloudWatch Logs log-group name for application. (ex: /ecs/project/dev/back/django)"
     Type: String
-    Default: /ecs/my-project/dev/back/django
+    Default: /ecs/shun198/dev/back/django
   WebLogGroupName:
     Description: "Enter the CloudWatch Logs log-group name for webserver. (ex: /ecs/project/dev/back/nginx)"
     Type: String
-    Default: /ecs/my-project/dev/back/nginx
+    Default: /ecs/shun198/dev/back/nginx
 
 # -------------------------------------
 # Resources

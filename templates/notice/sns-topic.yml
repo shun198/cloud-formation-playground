@@ -73,8 +73,8 @@ Resources:
   AlertTopic:
     Type: AWS::SNS::Topic
     Properties:
-      DisplayName: my-project-alert
-      TopicName: my-project-alert
+      DisplayName: shun198-alert
+      TopicName: shun198-alert
       KmsMasterKeyId: !Ref KMSKeyAliasName
   AlertTopicPolicy:
     Type: AWS::SNS::TopicPolicy
@@ -100,8 +100,8 @@ Resources:
   WarningTopic:
     Type: AWS::SNS::Topic
     Properties:
-      DisplayName: my-project-warning
-      TopicName: my-project-warning
+      DisplayName: shun198-warning
+      TopicName: shun198-warning
       KmsMasterKeyId: !Ref KMSKeyAliasName
   WarningTopicPolicy:
     Type: AWS::SNS::TopicPolicy
@@ -127,8 +127,8 @@ Resources:
   SecurityTopic:
     Type: AWS::SNS::Topic
     Properties:
-      DisplayName: my-project-security
-      TopicName: my-project-security
+      DisplayName: shun198-security
+      TopicName: shun198-security
       KmsMasterKeyId: !Ref KMSKeyAliasName
   SecurityTopicPolicy:
     Type: AWS::SNS::TopicPolicy

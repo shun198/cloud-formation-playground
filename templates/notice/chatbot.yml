@@ -46,11 +46,11 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name (ex: my-project)."
+    Description: "Enter the project name (ex: shun198)."
     Type: String
     MinLength: 1
     ConstraintDescription: "ProjectName must be entered."
-    Default: my-project
+    Default: shun198
   Environment:
     Description: "Select a environment name."
     Type: String
@@ -107,32 +107,32 @@ Parameters:
   AlertTopicName:
     Description: "Enter the SNS Topic name for alert."
     Type: String
-    Default: my-project-alert
+    Default: shun198-alert
   # ワーニング通知先 SNS TopicName
   WarningTopicName:
     Description: "Enter the SNS Topic name for warning."
     Type: String
-    Default: my-project-warning
+    Default: shun198-warning
   # セキュリティ関連通知先 SNS TopicName
   SecurityTopicName:
     Description: "Enter the SNS Topic name for security."
     Type: String
-    Default: my-project-security
+    Default: shun198-security
   # AWS Health 通知先 SNS TopicName
   HealthTopicName:
     Description: "Enter the SNS Topic name for health."
     Type: String
-    Default: my-project-health
+    Default: shun198-health
   # CI/CD 関連通知先 SNS TopicName
   CICDPipelineTopicName:
     Description: "Enter the SNS Topic name for cicd pipeline."
     Type: String
-    Default: my-project-cicd-pipeline
+    Default: shun198-cicd-pipeline
   # CloudTrail 通知先 SNS TopicName
   CloudTrailTopicName:
     Description: "Name of SNS Topic name for CloudTrail."
     Type: String
-    Default: my-project-cloudtrail
+    Default: shun198-cloudtrail
 
 # -------------------------------------
 # Conditions

@@ -35,11 +35,11 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name. (ex: my-project)"
+    Description: "Enter the project name. (ex: shun198)"
     Type: String
     MinLength: 1
     ConstraintDescription: "ProjectName must be enter."
-    Default: my-project
+    Default: shun198
   Environment:
     Description: "Select the environment."
     Type: String
@@ -49,10 +49,10 @@ Parameters:
       - prd
     ConstraintDescription: "Environment must be select."
   AppLogGroupName:
-    Description: "CloudWatch Logs log-group name for application. (ex: /ecs/my-project/dev/back/django)"
+    Description: "CloudWatch Logs log-group name for application. (ex: /ecs/shun198/dev/back/django)"
     Type: String
   WebLogGroupName:
-    Description: "CloudWatch Logs log-group name for webserver. (ex: /ecs/my-project/dev/back/nginx)"
+    Description: "CloudWatch Logs log-group name for webserver. (ex: /ecs/shun198/dev/back/nginx)"
     Type: String
 
 # -------------------------------------

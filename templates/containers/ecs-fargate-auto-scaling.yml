@@ -28,11 +28,11 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name. (ex: my-project)"
+    Description: "Enter the project name. (ex: shun198)"
     Type: String
     MinLength: 1
     ConstraintDescription: "ProjectName must be enter."
-    Default: my-project
+    Default: shun198
   Environment:
     Description: "Select the environment."
     Type: String
@@ -41,10 +41,10 @@ Parameters:
       - stg
       - prd
   TargetECSClusterName:
-    Description: "Enter the ECS cluster name for CloudWatch monitoring. (ex: my-project-dev-cluster)"
+    Description: "Enter the ECS cluster name for CloudWatch monitoring. (ex: shun198-dev-cluster)"
     Type: String
   TargetECSServiceName:
-    Description: "Enter the ECS service name for CloudWatch monitoring. (ex: my-project-dev-service)"
+    Description: "Enter the ECS service name for CloudWatch monitoring. (ex: shun198-dev-service)"
     Type: String
   ServiceScaleEvaluationPeriods:
     Description: "The number of periods over which data is compared to the specified threshold."

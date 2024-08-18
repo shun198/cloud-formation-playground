@@ -1,5 +1,5 @@
 {
-    "taskDefinitionArn": "arn:aws:ecs:ap-northeast-1:044392971793:task-definition/my-project-dev-back-taskdef:18",
+    "taskDefinitionArn": "arn:aws:ecs:ap-northeast-1:044392971793:task-definition/shun198-dev-back-taskdef:18",
     "containerDefinitions": [
         {
             "name": "web",
@@ -41,9 +41,9 @@
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
-                    "awslogs-group": "/ecs/my-project/dev/back/nginx",
+                    "awslogs-group": "/ecs/shun198/dev/back/nginx",
                     "awslogs-region": "ap-northeast-1",
-                    "awslogs-stream-prefix": "my-project"
+                    "awslogs-stream-prefix": "shun198"
                 },
                 "secretOptions": []
             },
@@ -78,43 +78,43 @@
             "secrets": [
                 {
                     "name": "POSTGRES_NAME",
-                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/my-project/dev/POSTGRES_NAME"
+                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/shun198/dev/POSTGRES_NAME"
                 },
                 {
                     "name": "POSTGRES_USER",
-                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/my-project/dev/POSTGRES_USER"
+                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/shun198/dev/POSTGRES_USER"
                 },
                 {
                     "name": "POSTGRES_PASSWORD",
-                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/my-project/dev/POSTGRES_PASSWORD"
+                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/shun198/dev/POSTGRES_PASSWORD"
                 },
                 {
                     "name": "POSTGRES_PORT",
-                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/my-project/dev/POSTGRES_PORT"
+                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/shun198/dev/POSTGRES_PORT"
                 },
                 {
                     "name": "POSTGRES_HOST",
-                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/my-project/dev/POSTGRES_HOST"
+                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/shun198/dev/POSTGRES_HOST"
                 },
                 {
                     "name": "SECRET_KEY",
-                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/my-project/dev/SECRET_KEY"
+                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/shun198/dev/SECRET_KEY"
                 },
                 {
                     "name": "ALLOWED_HOSTS",
-                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/my-project/dev/ALLOWED_HOSTS"
+                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/shun198/dev/ALLOWED_HOSTS"
                 },
                 {
                     "name": "AWS_DEFAULT_REGION_NAME",
-                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/my-project/dev/AWS_DEFAULT_REGION_NAME"
+                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/shun198/dev/AWS_DEFAULT_REGION_NAME"
                 },
                 {
                     "name": "TRUSTED_ORIGINS",
-                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/my-project/dev/TRUSTED_ORIGINS"
+                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/shun198/dev/TRUSTED_ORIGINS"
                 },
                 {
                     "name": "DJANGO_SETTINGS_MODULE",
-                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/my-project/dev/DJANGO_SETTINGS_MODULE"
+                    "valueFrom": "arn:aws:ssm:ap-northeast-1:044392971793:parameter/shun198/dev/DJANGO_SETTINGS_MODULE"
                 }
             ],
             "dnsServers": [],
@@ -126,18 +126,18 @@
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
-                    "awslogs-group": "/ecs/my-project/dev/back/django",
+                    "awslogs-group": "/ecs/shun198/dev/back/django",
                     "awslogs-region": "ap-northeast-1",
-                    "awslogs-stream-prefix": "my-project"
+                    "awslogs-stream-prefix": "shun198"
                 },
                 "secretOptions": []
             },
             "systemControls": []
         }
     ],
-    "family": "my-project-dev-back-taskdef",
-    "taskRoleArn": "arn:aws:iam::044392971793:role/service-role/ECSTaskRole-my-project-dev",
-    "executionRoleArn": "arn:aws:iam::044392971793:role/service-role/ECSTaskExecutionRole-my-project-dev",
+    "family": "shun198-dev-back-taskdef",
+    "taskRoleArn": "arn:aws:iam::044392971793:role/service-role/ECSTaskRole-shun198-dev",
+    "executionRoleArn": "arn:aws:iam::044392971793:role/service-role/ECSTaskExecutionRole-shun198-dev",
     "networkMode": "awsvpc",
     "revision": 18,
     "volumes": [
@@ -197,7 +197,7 @@
     "tags": [
         {
             "key": "ProjectName",
-            "value": "my-project"
+            "value": "shun198"
         },
         {
             "key": "Environment",

@@ -50,11 +50,11 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name. (ex: my-project)"
+    Description: "Enter the project name. (ex: shun198)"
     Type: String
     MinLength: 1
     ConstraintDescription: "ProjectName must be enter."
-    Default: my-project
+    Default: shun198
   Environment:
     Description: "Select the environment."
     Type: String
@@ -96,18 +96,18 @@ Parameters:
     Type: String
     Default: codedeploy/appspec.yml
   ECRBackEndDjangoRepositoryName:
-    Description: "Enter the ECR backend application repository name. (ex: my-project/dev/back/django)"
+    Description: "Enter the ECR backend application repository name. (ex: shun198/dev/back/django)"
     Type: String
-    Default: my-project/dev/back/django
+    Default: shun198/dev/back/django
   ECRBackEndNginxRepositoryName:
-    Description: "Enter the ECR backend webserver repository name. (ex: my-project/dev/back/nginx)"
+    Description: "Enter the ECR backend webserver repository name. (ex: shun198/dev/back/nginx)"
     Type: String
-    Default: my-project/dev/back/nginx
+    Default: shun198/dev/back/nginx
   CodeDeployApplicationName:
-    Description: "Enter the CodeDeploy application name. (ex: my-project-dev-cdapp)"
+    Description: "Enter the CodeDeploy application name. (ex: shun198-dev-cdapp)"
     Type: String
   CodeDeployDeploymentGroupName:
-    Description: "Enter the CodeDeploy deployment group name. (ex: my-project-dev-cdg)"
+    Description: "Enter the CodeDeploy deployment group name. (ex: shun198-dev-cdg)"
     Type: String
   CodeDeployDeploymentConfigName:
     Description: "Enter the CodeDeploy deployment config name."
@@ -119,16 +119,16 @@ Parameters:
       - CodeDeployDefault.ECSCanary10Percent15Minutes
       - CodeDeployDefault.ECSAllAtOnce
   ECSClusterName:
-    Description: "Enter the ECS cluster name. (ex: my-project-dev-cluster)"
+    Description: "Enter the ECS cluster name. (ex: shun198-dev-cluster)"
     Type: String
   ECSServiceName:
-    Description: "Enter the ECS cluster name. (ex: my-project-dev-back-service)"
+    Description: "Enter the ECS cluster name. (ex: shun198-dev-back-service)"
     Type: String
   ALBTargetGroupBlueName:
-    Description: "Enter the ALB Target Group Name for Blue / Green Deployment. (ex: my-project-dev-tg-blue)"
+    Description: "Enter the ALB Target Group Name for Blue / Green Deployment. (ex: shun198-dev-tg-blue)"
     Type: String
   ALBTargetGroupGreenName:
-    Description: "Enter the ALB Target Group Name for Blue / Green Deployment. (ex: my-project-dev-tg-green)"
+    Description: "Enter the ALB Target Group Name for Blue / Green Deployment. (ex: shun198-dev-tg-green)"
     Type: String
   ALBProductionListenerArn:
     Description: "Enter the ALB Production Listener ARN for Blue / Green Deployment."

@@ -31,11 +31,11 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name. (ex: my-project)"
+    Description: "Enter the project name. (ex: shun198)"
     Type: String
     MinLength: 1
     ConstraintDescription: "ProjectName must be entered."
-    Default: my-project
+    Default: shun198
   Environment:
     Description: "Select the environment."
     Type: String
@@ -87,13 +87,13 @@ Parameters:
       - python3.11
     Default: python3.11
   SSMParameterNameForInternalBackSrvUrl:
-    Description: "Enter the Systems Manager Parameter Store name defined as 'INTERNAL_BACK_SRV_URL' (ex: /my-project/dev/back/INTERNAL_BACK_SRV_URL)"
+    Description: "Enter the Systems Manager Parameter Store name defined as 'INTERNAL_BACK_SRV_URL' (ex: /shun198/dev/back/INTERNAL_BACK_SRV_URL)"
     Type: String
   SSMParameterNameForLambdaToken:
-    Description: "Enter the Systems Manager Parameter Store name defined as 'LAMBDA_TOKEN' (ex: /my-project/dev/back/LAMBDA_TOKEN)"
+    Description: "Enter the Systems Manager Parameter Store name defined as 'LAMBDA_TOKEN' (ex: /shun198/dev/back/LAMBDA_TOKEN)"
     Type: String
   UploadCSVQueueArn:
-    Description: "Enter the SQS queue ARN (ex: arn:aws:sqs:<aws_region>:<aws_account_id>:my-project-dev-upload-csv-sqs.fifo)"
+    Description: "Enter the SQS queue ARN (ex: arn:aws:sqs:<aws_region>:<aws_account_id>:shun198-dev-upload-csv-sqs.fifo)"
     Type: String
 # -------------------------------------
 # Resources

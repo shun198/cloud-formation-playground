@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: "Managed Prefix List for my-project"
+Description: "Managed Prefix List for shun198"
 
 # -------------------------------------
 # Metadata
@@ -22,11 +22,11 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name (ex: my-project)"
+    Description: "Enter the project name (ex: shun198)"
     Type: String
     MinLength: 1
     ConstraintDescription: "ProjectName must be enter"
-    Default: my-project
+    Default: shun198
   UserA:
     Description: "Enter the IP addresses for UserA (ex: 0.0.0.0/32)"
     Type: String

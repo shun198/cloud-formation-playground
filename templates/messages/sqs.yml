@@ -23,11 +23,11 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name (ex: my-project)"
+    Description: "Enter the project name (ex: shun198)"
     Type: String
     MinLength: 1
     ConstraintDescription: "ProjectName must be entered"
-    Default: my-project
+    Default: shun198
   Environment:
     Description: "Select the environment"
     Type: String
@@ -37,7 +37,7 @@ Parameters:
       - prd
     ConstraintDescription: "Environment must be selected"
   SQSQueueName:
-    Description: "Enter the upload csv queue name (ex: my-project-dev-upload-csv-sqs.fifo)"
+    Description: "Enter the upload csv queue name (ex: shun198-dev-upload-csv-sqs.fifo)"
     Type: String
   MessageRetentionPeriod:
     Description: "Enter the time to hold messages as a queue (default: 3600)"
