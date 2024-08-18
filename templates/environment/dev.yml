@@ -78,23 +78,21 @@ Metadata:
         Parameters:
           - ContainerInsightsEnabled
       - Label:
-          default: "RDS (MySQL) Configuration"
+          default: "RDS (Postgres) Configuration"
         Parameters:
-          - MySQLMajorVersion
-          - MySQLMinorVersion
+          - PostgreSQLMajorVersion
+          - PostgreSQLMinorVersion
           - RDSDBName
           - RDSDBMasterUserName
           - RDSDBMasterUserPassword
           - RDSDBInstanceClass
-          - RDSDBInstanceStorageType
           - RDSDBInstanceStorageSize
-          - RDSMultiAZEnabled
+          - RDSDBInstanceStorageType
+          - EnablePerformanceInsights
           - BackupRetentionPeriod
-          - CopyTagsToSnapshot
           - PreferredBackupWindow
           - PreferredMaintenanceWindow
           - AutoMinorVersionUpgradeEnabled
-          - EnablePerformanceInsights
       - Label:
           default: "Logging Configuration"
         Parameters:
@@ -335,85 +333,78 @@ Parameters:
     Default: enabled
 
   # -------------------------------------
-  # RDS
+  # RDS (Postgres)
   # -------------------------------------
-  MySQLMajorVersion:
-    Description: "Select the MySQL engine major version."
+  PostgreSQLMajorVersion:
+    Description: "Select the Postgres engine major version (default: 16.0)"
     Type: String
-    Default: 8.0
-    AllowedValues: [8.0]
-  MySQLMinorVersion:
-    Description: "Select the MySQL engine minor version."
+    Default: 16
+    AllowedValues: [16]
+  PostgreSQLMinorVersion:
+    Description: "Select the Postgres engine minor version"
     Type: String
-    Default: 37
-    AllowedValues: [36, 37]
+    Default: 2
+    AllowedValues: [0, 1, 2]
   RDSDBName:
-    Description: "Enter the database name."
+    Description: "Enter the database name (ex: factor_flow_master_development)"
     Type: String
-    Default: my_project_development
   RDSDBMasterUserName:
-    Description: "Enter the master username."
+    Description: "Enter the master username, following your company's naming rule (ref: https://pj100.esa.io/posts/9475)"
     Type: String
     NoEcho: true
     MinLength: 1
     MaxLength: 16
     AllowedPattern: "^[a-zA-Z][a-zA-Z_0-9]*"
-    ConstraintDescription: "Must begin with a letter and contain only alphanumeric characters."
+    ConstraintDescription: "Must begin with a letter and contain only alphanumeric characters"
   RDSDBMasterUserPassword:
-    Description: "Enter the master password."
+    Description: "Enter the master password"
     Type: String
     NoEcho: true
     MinLength: 10
     MaxLength: 41
     AllowedPattern: "^[a-zA-Z0-9]*"
-    ConstraintDescription: "Must contain only alphanumeric characters."
+    ConstraintDescription: "Must contain only alphanumeric characters"
   RDSDBInstanceClass:
     Description: "Select the DB Instance class"
     Type: String
     Default: db.t4g.small
     AllowedValues:
-      [db.t4g.micro, db.t4g.small, db.t4g.medium, db.m7g.large, db.r7g.large]
+      - db.t4g.micro
+      - db.t4g.small
+      - db.t4g.medium
+      - db.m7g.large
+      - db.r7g.large
+  RDSDBInstanceStorageSize:
+    Description: "Enter the DB Instance storage size (default: 20 GiB)"
+    Type: String
+    Default: 20
   RDSDBInstanceStorageType:
-    Description: "Select a DB Instance storage type."
+    Description: "Enter the DB Instance storage type (default: gp3)"
     Type: String
     Default: gp3
     AllowedValues: [gp3, io1]
-  RDSDBInstanceStorageSize:
-    Description: "Enter the DB Instance storage size. (GiB)"
+  EnablePerformanceInsights:
+    Description: "Select whether to enable performance insights"
     Type: String
-    Default: 20
-  RDSMultiAZEnabled:
-    Description: "Select whether you want to enable Multi-AZ or not."
-    Type: String
-    Default: false
+    Default: True
     AllowedValues: [true, false]
   BackupRetentionPeriod:
-    Description: "Select the retention period for backup data."
+    Description: "Select the backup retention period"
     Type: String
-    Default: 3
-    AllowedValues: [0, 1, 3, 7, 14, 21, 31, 35]
-  CopyTagsToSnapshot:
-    Description: "Select the enable snapshot."
-    Type: String
-    Default: false
-    AllowedValues: [true, false]
+    Default: 1
+    AllowedValues: [0, 1, 3, 7, 14, 21, 30, 35]
   PreferredBackupWindow:
-    Description: "Enter the time of day to perform backups, separated by 30 minutes. (format/UTC: hh24:mi-hh24:mi)"
+    Description: "Enter the time of day to perform backups, separated by 30 minutes (format/UTC: hh24:mi-hh24:mi)"
     Type: String
     Default: 19:00-19:30
   PreferredMaintenanceWindow:
-    Description: "Enter the time of day to perform maintenances, separated by 30 minutes. (format/UTC: ddd:hh24:mi-ddd:hh24:mi)"
+    Description: "Enter the time of day to perform maintenances, separated by 30 minutes (format/UTC: ddd:hh24:mi-ddd:hh24:mi)"
     Type: String
     Default: sun:20:00-sun:20:30
   AutoMinorVersionUpgradeEnabled:
-    Description: "Select whether to enable RDS DB Instance minor version auto upgrade."
+    Description: "Select whether to enable RDS DB Instance minor version auto upgrade"
     Type: String
-    Default: false
-    AllowedValues: [true, false]
-  EnablePerformanceInsights:
-    Description: "Select whether to enable performance insights. (excluding t2, t3, t4 micro and small InstanceClass)"
-    Type: String
-    Default: false
+    Default: true
     AllowedValues: [true, false]
 
   # -------------------------------------
@@ -612,25 +603,24 @@ Resources:
       Parameters:
         ProjectName: !Ref ProjectName
         Environment: !Ref Environment
-        MySQLMajorVersion: !Ref MySQLMajorVersion
-        MySQLMinorVersion: !Ref MySQLMinorVersion
-        DBName: !Ref RDSDBName
-        DBMasterUserName: !Ref RDSDBMasterUserName
-        DBMasterUserPassword: !Ref RDSDBMasterUserPassword
-        DBInstanceClass: !Ref RDSDBInstanceClass
-        DBInstanceStorageType: !Ref RDSDBInstanceStorageType
-        DBInstanceStorageSize: !Ref RDSDBInstanceStorageSize
+        PostgreSQLMajorVersion: !Ref PostgreSQLMajorVersion
+        PostgreSQLMinorVersion: !Ref PostgreSQLMinorVersion
+        RDSDBName: !Ref RDSDBName
+        RDSDBMasterUserName: !Ref RDSDBMasterUserName
+        RDSDBMasterUserPassword: !Ref RDSDBMasterUserPassword
+        RDSDBInstanceClass: !Ref RDSDBInstanceClass
+        RDSDBInstanceStorageSize: !Ref RDSDBInstanceStorageSize
+        RDSDBInstanceStorageType: !Ref RDSDBInstanceStorageType
         RDSPrivateSubnet1: !GetAtt VPCStack.Outputs.RDSPrivateSubnet1
         RDSPrivateSubnet2: !GetAtt VPCStack.Outputs.RDSPrivateSubnet2
-        DBSecurityGroup: !GetAtt SGStack.Outputs.RDSForMySQLSG
-        MultiAZEnabled: !Ref RDSMultiAZEnabled
-        DeletionProtectionEnabled: !Ref DeletionProtectionEnabled
+        RDSDBSecurityGroupID: !GetAtt SGStack.Outputs.RDSForPostgreSQLSG
+        EnablePerformanceInsights: !Ref EnablePerformanceInsights
         BackupRetentionPeriod: !Ref BackupRetentionPeriod
-        CopyTagsToSnapshot: !Ref CopyTagsToSnapshot
         PreferredBackupWindow: !Ref PreferredBackupWindow
         PreferredMaintenanceWindow: !Ref PreferredMaintenanceWindow
+        MultiAZEnabled: !Ref MultiAZEnabled
         AutoMinorVersionUpgradeEnabled: !Ref AutoMinorVersionUpgradeEnabled
-        EnablePerformanceInsights: !Ref EnablePerformanceInsights
+        DeletionProtectionEnabled: !Ref DeletionProtectionEnabled
 
   # -------------------------------------
   # Logging

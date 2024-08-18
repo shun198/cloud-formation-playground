@@ -40,103 +40,104 @@ Metadata:
 # -------------------------------------
 Parameters:
   ProjectName:
-    Description: "Enter the project name. (ex: my-project)"
+    Description: "Enter the project name (ex: my-project)"
     Type: String
     Default: my-project
-    ConstraintDescription: "ProjectName is required."
+    ConstraintDescription: "ProjectName is required"
     MinLength: 1
   Environment:
-    Description: "Select the environment."
+    Description: "Select the environment"
     Type: String
     AllowedValues:
       - dev
       - stg
       - prd
-    ConstraintDescription: "Environment must be select."
+    ConstraintDescription: "Environment must be select"
   PostgreSQLMajorVersion:
-    Description: "Select the PostgreSQL engine major version. (default: 15)"
+    Description: "Select the PostgreSQL engine major version (default: 16)"
     Type: String
-    Default: 15
-    AllowedValues: [15]
+    Default: 16
+    AllowedValues: [16]
   PostgreSQLMinorVersion:
-    Description: "Select the PostgreSQL engine minor version."
+    Description: "Select the PostgreSQL engine minor version"
     Type: String
     Default: 2
-    AllowedValues: [2]
+    AllowedValues: [0, 1, 2]
   RDSDBInstanceClass:
-    Description: "Select the DB Instance class. (default: db:t3.small)"
+    Description: "Select a DB instance class"
     Type: String
-    Default: db.t3.small
+    Default: db.t4g.small
     AllowedValues:
-      - db.m5.large
-      - db.r5.large
-      - db.t3.micro
-      - db.t3.small
-      - db.t3.medium
+      [db.t4g.micro, db.t4g.small, db.t4g.medium, db.m7g.large, db.r7g.large]
   RDSDBInstanceStorageSize:
-    Description: "Enter the DB Instance storage size. (default: 20 GiB)"
+    Description: "Enter the DB Instance storage size (GiB)"
     Type: String
     Default: 20
   RDSDBInstanceStorageType:
-    Description: "Enter the DB Instance storage type. (default: gp3)"
+    Description: "Enter the DB Instance storage type"
     Type: String
     Default: gp3
     AllowedValues: [gp3, io1]
   RDSDBName:
-    Description: "Enter the database name. (default: postgres)"
+    Description: "Enter the database name (default: factor_flow_master_development)"
     Type: String
-    Default: postgres
+    Default: factor_flow_master_development
   RDSDBMasterUserName:
-    Description: "Enter the master username."
+    Description: "Enter the master username"
     Type: String
-    Default: postgres
+    MinLength: 1
+    MaxLength: 16
+    AllowedPattern: "^[a-zA-Z][a-zA-Z_0-9]*"
+    ConstraintDescription: "Must begin with a letter and contain only alphanumeric characters"
+    NoEcho: true
   RDSDBMasterUserPassword:
-    Description: "Enter the master password."
+    Description: "Enter the master password"
     Type: String
-    Default: postgres
+    MinLength: 10
+    MaxLength: 41
+    AllowedPattern: "^[a-zA-Z0-9]*"
+    ConstraintDescription: "Must contain only alphanumeric characters"
     NoEcho: true
   MultiAZEnabled:
-    Description: "Select whether you want to enable Multi-AZ or not. (default: false)"
+    Description: "Select whether you want to enable Multi-AZ or not (default: false)"
     Type: String
     Default: false
     AllowedValues: [true, false]
-  # ドロップダウンから自身が作成したプライベートサブネットを選択する
   RDSPrivateSubnet1:
-    Description: "Enter the Subnet ID for RDS in the selected VPC."
+    Description: "Enter the Subnet ID for RDS in the selected VPC"
     Type: AWS::EC2::Subnet::Id
   RDSPrivateSubnet2:
-    Description: "Enter the Subnet ID for RDS in the selected VPC."
+    Description: "Enter the Subnet ID for RDS in the selected VPC"
     Type: AWS::EC2::Subnet::Id
   RDSDBSecurityGroupID:
-    Description: "Select the Security Group ID for RDS."
+    Description: "Select the Security Group ID for RDS"
     Type: AWS::EC2::SecurityGroup::Id
   EnablePerformanceInsights:
-    Description: "Select whether to enable performance insights. (except t3.family)"
+    Description: "Select whether to enable performance insights"
     Type: String
-    Default: false
+    Default: True
     AllowedValues: [true, false]
   BackupRetentionPeriod:
-    Description: "Select the backup retention period."
+    Description: "Select the backup retention period"
     Type: String
     Default: 35
     AllowedValues: [0, 1, 3, 7, 14, 21, 30, 35]
   PreferredBackupWindow:
-    Description: "Enter the time of day to perform backups, separated by 30 minutes. (format/UTC: hh24:mi-hh24:mi)"
+    Description: "Enter the time of day to perform backups, separated by 30 minutes (format/UTC: hh24:mi-hh24:mi)"
     Type: String
     Default: 19:00-19:30
   PreferredMaintenanceWindow:
-    Description: "Enter the time of day to perform maintenances, separated by 30 minutes. (format/UTC: ddd:hh24:mi-ddd:hh24:mi)"
+    Description: "Enter the time of day to perform maintenances, separated by 30 minutes (format/UTC: ddd:hh24:mi-ddd:hh24:mi)"
     Type: String
     Default: sun:20:00-sun:20:30
   AutoMinorVersionUpgradeEnabled:
-    Description: "Select whether to enable RDS DB Instance minor version auto upgrade."
+    Description: "Select whether to enable RDS DB Instance minor version auto upgrade"
     Type: String
     Default: true
     AllowedValues: [true, false]
   DeletionProtectionEnabled:
-    Description: "Select whether to enable deletion protection."
+    Description: "Select whether to enable deletion protection"
     Type: String
-    # 今回は検証用でfalseにします
     Default: false
     AllowedValues: [true, false]
 
@@ -182,7 +183,7 @@ Resources:
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
-  
+
   # -------------------------------------
   # DB ParameterGroup
   # -------------------------------------
@@ -196,24 +197,31 @@ Resources:
         log_min_duration_statement: 10000
         log_statement: all
         timezone: Asia/Tokyo
-  
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${Environment}-rds-pg
+        - Key: ProjectName
+          Value: !Sub ${ProjectName}
+        - Key: Environment
+          Value: !Sub ${Environment}
+
   # -------------------------------------
   # DB OptionGroup
   # -------------------------------------
-  # RDSDBOptionGroup:
-  #   Type: AWS::RDS::OptionGroup
-  #   Properties:
-  #     EngineName: postgres
-  #     MajorEngineVersion: !Ref PostgreSQLMajorVersion
-  #     OptionGroupDescription: !Sub ${ProjectName}-${Environment}-rds-og
-  #     OptionGroupName: !Sub ${ProjectName}-${Environment}-rds-og
-  #     Tags:
-  #       - Key: Name
-  #         Value: !Sub ${ProjectName}-${Environment}-rds-og
-  #       - Key: ProjectName
-  #         Value: !Sub ${ProjectName}
-  #       - Key: Environment
-  #         Value: !Sub ${Environment}
+  RDSDBOptionGroup:
+    Type: AWS::RDS::OptionGroup
+    Properties:
+      EngineName: postgres
+      MajorEngineVersion: !Ref PostgreSQLMajorVersion
+      OptionGroupDescription: !Sub ${ProjectName}-${Environment}-rds-og
+      OptionGroupName: !Sub ${ProjectName}-${Environment}-rds-og
+      Tags:
+        - Key: Name
+          Value: !Sub ${ProjectName}-${Environment}-rds-og
+        - Key: ProjectName
+          Value: !Sub ${ProjectName}
+        - Key: Environment
+          Value: !Sub ${Environment}
 
   # -------------------------------------
   # DB Instance
@@ -238,7 +246,7 @@ Resources:
         - !Ref RDSDBSecurityGroupID
       DBName: !Ref RDSDBName
       DBParameterGroupName: !Ref RDSDBParameterGroup
-      # OptionGroupName: !Ref RDSDBOptionGroup
+      OptionGroupName: !Ref RDSDBOptionGroup
       BackupRetentionPeriod: !Ref BackupRetentionPeriod
       PreferredBackupWindow: !Ref PreferredBackupWindow
       CopyTagsToSnapshot: true
