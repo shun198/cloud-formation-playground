@@ -275,11 +275,11 @@ Parameters:
     Default: X-Auth-ALB
     NoEcho: true
   AuthHeaderValue:
-    Description: "Enter the header value required for authentication between Amplify and ALB."
+    Description: "Enter the header value required for authentication between Amplify and ALB. (ex. test)"
     Type: String
     NoEcho: true
   AuthHeaderValueForAdmin:
-    Description: "Enter the header value required for authentication between Admin Amplify and ALB."
+    Description: "Enter the header value required for authentication between Admin Amplify and ALB. (ex. test)"
     Type: String
     NoEcho: true
   HealthCheckPath:
