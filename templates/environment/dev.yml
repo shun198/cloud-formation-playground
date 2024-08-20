@@ -105,8 +105,8 @@ Metadata:
         Parameters:
           - DeletionProtectionEnabled
           - MultiAZEnabled
-          - DomainName
-          - DomainNameForAdmin
+          - DomainNameForFront
+          - DomainNameForAdminFront
 
 # -------------------------------------
 # Parameters
@@ -275,11 +275,11 @@ Parameters:
     Default: X-Auth-ALB
     NoEcho: true
   AuthHeaderValue:
-    Description: "Enter the header value required for authentication between Amplify and ALB. (ex. test)"
+    Description: "Enter the header value required for authentication between Amplify and ALB. (ex. test123)"
     Type: String
     NoEcho: true
   AuthHeaderValueForAdmin:
-    Description: "Enter the header value required for authentication between Admin Amplify and ALB. (ex. test)"
+    Description: "Enter the header value required for authentication between Admin Amplify and ALB. (ex. test456)"
     Type: String
     NoEcho: true
   HealthCheckPath:
@@ -440,11 +440,11 @@ Parameters:
     Type: String
     Default: false
     AllowedValues: [true, false]
-  DomainName:
+  DomainNameForFront:
     Description: "Enter the domain name. (CNAME)"
     Type: String
     Default: shun-practice.com
-  DomainNameForAdmin:
+  DomainNameForAdminFront:
     Description: "Enter the admin domain name. (CNAME)"
     Type: String
     Default: admin.shun-practice.com
@@ -508,8 +508,8 @@ Resources:
       Parameters:
         ProjectName: !Ref ProjectName
         Environment: !Ref Environment
-        DomainName: !Ref DomainName
-        DomainNameForAdmin: !Ref DomainNameForAdmin
+        DomainName: !Ref DomainNameForFront
+        DomainNameForAdmin: !Ref DomainNameForAdminFront
         HostZoneID: !Ref HostZoneID
         HostZoneIDForAdmin: !Ref HostZoneIDForAdmin
 
@@ -543,8 +543,8 @@ Resources:
         Environment: !Ref Environment
         DomainNameForAPI: !Ref DomainNameForAPI
         DomainNameForInternal: !Ref DomainNameForInternal
-        DomainNameForFront: !Ref DomainName
-        DomainNameForAdminFront: !Ref DomainNameForAdmin
+        DomainNameForFront: !Ref DomainNameForFront
+        DomainNameForAdminFront: !Ref DomainNameForAdminFront
         HostZoneID: !GetAtt ACMStack.Outputs.HostZoneID
         PrivateHostZoneID: !Ref PrivateHostZoneID
         VPCID: !GetAtt VPCStack.Outputs.VPC

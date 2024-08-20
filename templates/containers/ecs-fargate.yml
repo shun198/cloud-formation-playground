@@ -189,6 +189,32 @@ Resources:
               ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/DJANGO_SETTINGS_MODULE
             - Name: CSRF_COOKIE_DOMAIN
               ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/CSRF_COOKIE_DOMAIN
+            - Name: BASE_URL
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/BASE_URL
+            - Name: AWS_SNS_ENDPOINT_URL
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/AWS_SNS_ENDPOINT_URL
+            - Name: BASE_URL
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/BASE_URL
+            - Name: AWS_SES_REGION_ENDPOINT
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/AWS_SES_REGION_ENDPOINT
+            - Name: AWS_SES_REGION_ENDPOINT
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/AWS_SES_REGION_ENDPOINT
+            - Name: AWS_S3_ENDPOINT
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/AWS_S3_ENDPOINT
+            - Name: AWS_STORAGE_BUCKET_NAME
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/AWS_STORAGE_BUCKET_NAME
+            - Name: DEFAULT_FROM_EMAIL
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/DEFAULT_FROM_EMAIL
+            - Name: DEFAULT_FROM_EMAIL
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/DEFAULT_FROM_EMAIL
+            - Name: AWS_SQS_URL
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/AWS_SQS_URL
+            - Name: AWS_SQS_ENDPOINT
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/AWS_SQS_ENDPOINT
+            - Name: AWS_SQS_MESSAGE_GROUP
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/AWS_SQS_MESSAGE_GROUP
+            - Name: LAMBDA_TOKEN
+              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/LAMBDA_TOKEN
           MountPoints:
             - SourceVolume: tmp-data
               ContainerPath: !Sub ${ApplicationRootPath}/tmp
