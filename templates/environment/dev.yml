@@ -72,7 +72,6 @@ Metadata:
         Parameters:
           - BackendAppRepositorySuffix
           - BackendWebRepositorySuffix
-          - ImageTagMutability
       - Label:
           default: "ECS Cluster Configuration"
         Parameters:
@@ -316,11 +315,6 @@ Parameters:
     Description: "Repository name suffix of the webserver container image. (ex: nginx)"
     Type: String
     Default: nginx
-  ImageTagMutability:
-    Description: "Select a ecr image mutability."
-    Type: String
-    Default: MUTABLE
-    AllowedValues: [MUTABLE, IMMUTABLE]
 
   # -------------------------------------
   # ECS Cluster
@@ -426,9 +420,11 @@ Parameters:
   CloudWatchLoggingOptionsLogGroupNameForApp:
     Description: "Enter the CloudWatch Logs log group name for Kinesis Data Firehose delivery stream execution logs of application. (ex: /aws/kinesisfirehose/s3-delivery-stream/shun198/dev/back/django)"
     Type: String
+    Default: /aws/kinesisfirehose/s3-delivery-stream/shun198/dev/back/django
   CloudWatchLoggingOptionsLogGroupNameForWeb:
     Description: "Enter the CloudWatch Logs log group name for Kinesis Data Firehose delivery stream execution logs of web server. (ex: /aws/kinesisfirehose/s3-delivery-stream/shun198/dev/back/nginx)"
     Type: String
+    Default: /aws/kinesisfirehose/s3-delivery-stream/shun198/dev/back/nginx
 
   # -------------------------------------
   # Common
@@ -581,7 +577,6 @@ Resources:
         Environment: !Ref Environment
         BackendAppRepositorySuffix: !Ref BackendAppRepositorySuffix
         BackendWebRepositorySuffix: !Ref BackendWebRepositorySuffix
-        ImageTagMutability: !Ref ImageTagMutability
 
   # -------------------------------------
   # ECS Cluster
