@@ -343,6 +343,7 @@ Parameters:
   RDSDBName:
     Description: "Enter the database name (ex: shun198_development)"
     Type: String
+    Default: shun198_development
   RDSDBMasterUserName:
     Description: "Enter the master username (postgres)"
     Type: String
