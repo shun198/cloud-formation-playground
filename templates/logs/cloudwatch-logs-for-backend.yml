@@ -2,17 +2,6 @@ AWSTemplateFormatVersion: 2010-09-09
 Description: "CloudWatch Logs Stack For Backend"
 
 # -------------------------------------
-# Mappings
-# -------------------------------------
-Mappings:
-  # ロググループの保持期間
-  RetentionInDaysMap:
-    Environment:
-      dev: 30
-      stg: 60
-      prd: 90
-
-# -------------------------------------
 # Metadata
 # -------------------------------------
 Metadata:
@@ -25,35 +14,41 @@ Metadata:
           - ProjectName
           - Environment
       - Label:
-          default: "CloudWatch Logs Configuration for ECS"
+          default: "CloudWatch Logs Configuration for ECS Fargate"
         Parameters:
-          - AppLogGroupName
-          - WebLogGroupName
+          - BackendAppLogGroupName
+          - BackendWebLogGroupName
+          - LogRetentionInDays
 
 # -------------------------------------
-# Input parameters
+# Parameters
 # -------------------------------------
 Parameters:
   ProjectName:
     Description: "Enter the project name. (ex: shun198)"
     Type: String
     MinLength: 1
-    ConstraintDescription: "ProjectName must be enter."
+    ConstraintDescription: "ProjectName must be entered."
     Default: shun198
   Environment:
-    Description: "Select the environment."
+    Description: "Select the environment name."
     Type: String
     AllowedValues:
       - dev
       - stg
       - prd
-    ConstraintDescription: "Environment must be select."
-  AppLogGroupName:
-    Description: "CloudWatch Logs log-group name for application. (ex: /ecs/shun198/dev/back/django)"
+    ConstraintDescription: "Environment name must be selected."
+  BackendAppLogGroupName:
+    Description: "CloudWatch Logs log-group name for application. (ex: /ecs/shun198/<environment>/back/django)"
     Type: String
-  WebLogGroupName:
-    Description: "CloudWatch Logs log-group name for webserver. (ex: /ecs/shun198/dev/back/nginx)"
+  BackendWebLogGroupName:
+    Description: "CloudWatch Logs log-group name for webserver. (ex: /ecs/shun198/<environment>/back/nginx)"
     Type: String
+  LogRetentionInDays:
+    Description: "Enter the data retention period."
+    Type: String
+    Default: 30
+    AllowedValues: [30, 60, 90]
 
 # -------------------------------------
 # Resources
@@ -68,9 +63,8 @@ Resources:
     UpdateReplacePolicy: Retain
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Ref AppLogGroupName
-      RetentionInDays:
-        !FindInMap [RetentionInDaysMap, Environment, !Ref Environment]
+      LogGroupName: !Ref BackendAppLogGroupName
+      RetentionInDays: !Ref LogRetentionInDays
       Tags:
         - Key: ProjectName
           Value: !Ref ProjectName
@@ -82,11 +76,25 @@ Resources:
     UpdateReplacePolicy: Retain
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Ref WebLogGroupName
-      RetentionInDays:
-        !FindInMap [RetentionInDaysMap, Environment, !Ref Environment]
+      LogGroupName: !Ref BackendWebLogGroupName
+      RetentionInDays: !Ref LogRetentionInDays
       Tags:
         - Key: ProjectName
           Value: !Ref ProjectName
         - Key: Environment
           Value: !Ref Environment
+
+  # -------------------------------------
+  # Metric Filter
+  # -------------------------------------
+  ErrorInBackendWebLogs:
+    Type: AWS::Logs::MetricFilter
+    DependsOn: LogGroupForWeb
+    Properties:
+      LogGroupName: !Ref BackendWebLogGroupName
+      FilterPattern: ?"[error]" ?"[crit]" ?"[alert]" ?"[emerg]"
+      MetricTransformations:
+        - DefaultValue: 0
+          MetricValue: 1
+          MetricNamespace: Backend/Logs
+          MetricName: ErrorInBackendWebLogs

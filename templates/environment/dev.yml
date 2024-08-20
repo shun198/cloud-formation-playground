@@ -347,7 +347,7 @@ Parameters:
     Default: 2
     AllowedValues: [0, 1, 2]
   RDSDBName:
-    Description: "Enter the database name (ex: factor_flow_master_development)"
+    Description: "Enter the database name (ex: shun198_development)"
     Type: String
   RDSDBMasterUserName:
     Description: "Enter the master username (postgres)"
@@ -358,7 +358,7 @@ Parameters:
     AllowedPattern: "^[a-zA-Z][a-zA-Z_0-9]*"
     ConstraintDescription: "Must begin with a letter and contain only alphanumeric characters"
   RDSDBMasterUserPassword:
-    Description: "Enter the master password (postgres)"
+    Description: "Enter the master password (Postgres123)"
     Type: String
     NoEcho: true
     MinLength: 10
