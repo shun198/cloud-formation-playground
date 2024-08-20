@@ -54,7 +54,7 @@ Resources:
     UpdateReplacePolicy: Retain
     Type: AWS::ECR::Repository
     Properties:
-      RepositoryName: !Sub ${ProjectName}/${Environment}/back/${shun198}
+      RepositoryName: !Sub ${ProjectName}/${Environment}/back/${BackendAppRepositorySuffix}
       ImageScanningConfiguration:
         ScanOnPush: true
       ImageTagMutability: IMMUTABLE
