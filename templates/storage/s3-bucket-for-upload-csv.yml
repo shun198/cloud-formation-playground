@@ -44,7 +44,7 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
-      BucketName: !Sub ${ProjectName}-${Environment}-list-file
+      BucketName: !Sub ${ProjectName}-${Environment}-upload-csv
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -71,8 +71,8 @@ Resources:
             Action:
               - s3:*
             Resource:
-              - !Sub arn:aws:s3:::${ProjectName}-${Environment}-list-file
-              - !Sub arn:aws:s3:::${ProjectName}-${Environment}-list-file/*
+              - !Sub arn:aws:s3:::${ProjectName}-${Environment}-upload-csv
+              - !Sub arn:aws:s3:::${ProjectName}-${Environment}-upload-csv/*
             Condition:
               Bool:
                 aws:SecureTransport: false

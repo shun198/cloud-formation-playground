@@ -189,14 +189,10 @@ Resources:
               ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/DJANGO_SETTINGS_MODULE
             - Name: CSRF_COOKIE_DOMAIN
               ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/CSRF_COOKIE_DOMAIN
-            - Name: AWS_SNS_ENDPOINT_URL
-              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/AWS_SNS_ENDPOINT_URL
             - Name: BASE_URL
               ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/BASE_URL
             - Name: AWS_SES_REGION_ENDPOINT
               ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/AWS_SES_REGION_ENDPOINT
-            - Name: AWS_S3_ENDPOINT
-              ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/AWS_S3_ENDPOINT
             - Name: AWS_STORAGE_BUCKET_NAME
               ValueFrom: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ProjectName}/${Environment}/AWS_STORAGE_BUCKET_NAME
             - Name: DEFAULT_FROM_EMAIL
