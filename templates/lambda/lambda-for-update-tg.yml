@@ -1,0 +1,210 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "Lambda Function Stack For Update Target Group in Internal ALB"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "EventBridge Configuration"
+        Parameters:
+          - EventBridgeRuleNameForUpdateInternalALBTG
+      - Label:
+          default: "Lambda Configuration"
+        Parameters:
+          - LambdaProtectedSubnet1
+          - LambdaProtectedSubnet2
+          - LambdaSecurityGroupID
+          - LambdaArchiveBucketName
+          - LambdaArchiveBucketObjectKey
+          - LambdaArchiveObjectVersionID
+          - ECSClusterName
+          - ECSServiceName
+          - InternalALBTargetGroupArn
+          - Handler
+          - MemorySize
+          - Timeout
+          - Runtime
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name. (ex: shun198)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be entered."
+    Default: shun198
+  Environment:
+    Description: "Select a environment name."
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment name must be select."
+  EventBridgeRuleNameForUpdateInternalALBTG:
+    Description: "Enter the EventBridge rule name of Lambda function for update internal ALB target group. (ex: notice-daily-jst-2550)"
+    Type: String
+  LambdaProtectedSubnet1:
+    Description: "Enter the Subnet ID for Lambda in the selected VPC."
+    Type: AWS::EC2::Subnet::Id
+  LambdaProtectedSubnet2:
+    Description: "Enter the Subnet ID for Lambda in the selected VPC."
+    Type: AWS::EC2::Subnet::Id
+  LambdaSecurityGroupID:
+    Description: "Select the Security Group ID for Lambda."
+    Type: AWS::EC2::SecurityGroup::Id
+  LambdaArchiveBucketName:
+    Description: "Enter the S3 bucket name for Lambda zip archive."
+    Type: String
+  LambdaArchiveBucketObjectKey:
+    Description: "Enter the S3 bucket object key for Lambda zip archive."
+    Type: String
+  LambdaArchiveObjectVersionID:
+    Description: "Enter the S3 object version ID for Lambda zip archive."
+    Type: String
+  ECSClusterName:
+    Description: "Enter the ECS cluster name. (ex: shun198-dev-cluster)"
+    Type: String
+  ECSServiceName:
+    Description: "Enter the ECS cluster name. (ex: shun198-dev-back-service)"
+    Type: String
+  InternalALBTargetGroupArn:
+    Description: "Enter the Internal ALB target group ARN. (ex: arn:aws:elasticloadbalancing:<region>:012345678910:targetgroup/xxxx/xxxx)"
+    Type: String
+  Handler:
+    Description: "Enter the Lambda function name for CloudFront invalidation. (default: lambda_function.lambda_handler)"
+    Type: String
+    Default: lambda_function.lambda_handler
+  MemorySize:
+    Type: Number
+    Description: "Enter the Lambda function memory size. (MiB) (default: 128)"
+    Default: 128
+    MinValue: 128
+    MaxValue: 10240
+  Timeout:
+    Description: "Enter the Lambda function timeout second. (default: 30)"
+    Type: Number
+    Default: 30
+    MinValue: 1
+    MaxValue: 900
+  Runtime:
+    Description: "Enter the Lambda function runtime."
+    Type: String
+    AllowedValues:
+      - python3.12
+    Default: python3.12
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # -------------------------------------
+  # Lambda Function
+  # -------------------------------------
+  UpdateInternalALBTGLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      VpcConfig:
+        SubnetIds:
+          - !Ref LambdaProtectedSubnet1
+          - !Ref LambdaProtectedSubnet2
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroupID
+      Code:
+        S3Bucket: !Ref LambdaArchiveBucketName
+        S3Key: !Ref LambdaArchiveBucketObjectKey
+        S3ObjectVersion: !Ref LambdaArchiveObjectVersionID
+      Environment:
+        Variables:
+          ECS_CLUSTER_NAME: !Ref ECSClusterName
+          ECS_SERVICE_NAME: !Ref ECSServiceName
+          TARGET_GROUP_ARN: !Ref InternalALBTargetGroupArn
+      FunctionName: !Sub ${ProjectName}-${Environment}-update-internal-alb-tg-linked-ecs
+      Description: "Internal ALB のターゲットグループに登録された ECS タスクのプライベート IP を更新する Lambda 関数"
+      Handler: !Ref Handler
+      MemorySize: !Ref MemorySize
+      Role: !GetAtt LambdaRoleForUpdateInternalALBTG.Arn
+      Runtime: !Ref Runtime
+      Timeout: !Ref Timeout
+      PackageType: Zip
+  EventInvokeLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref UpdateInternalALBTGLambda
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt InternalALBTGUpdateEventRule.Arn
+
+  # -------------------------------------
+  # EventBridge
+  # -------------------------------------
+  InternalALBTGUpdateEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Ref EventBridgeRuleNameForUpdateInternalALBTG
+      Description: !Sub "毎日 (JST) 01:50 の時間検知 Event をトリガーに Lambda function (${UpdateInternalALBTGLambda}) を起動"
+      ScheduleExpression: cron(50 16 * * ? *)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt UpdateInternalALBTGLambda.Arn
+          Id: UpdateInternalALBTGLambda
+
+  # -------------------------------------
+  # IAM Role
+  # -------------------------------------
+  LambdaRoleForUpdateInternalALBTG:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub LambdaRole-${ProjectName}-${Environment}-update-internal-alb-tg
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /service-role/
+      Policies:
+        - PolicyName: !Sub LambdaAccess-${ProjectName}-${Environment}-update-internal-alb-tg
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                  - ecs:ListTasks
+                  - ecs:DescribeTasks
+                  - elasticloadbalancing:DescribeTargetHealth
+                Resource: "*"
+              - Effect: Allow
+                Action: logs:CreateLogGroup
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+              - Effect: Allow
+                Action:
+                  - ecs:DescribeServices
+                Resource: !Sub arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:service/${ECSClusterName}/${ECSServiceName}
+              - Effect: Allow
+                Action:
+                  - elasticloadbalancing:RegisterTargets
+                  - elasticloadbalancing:DeregisterTargets
+                Resource: !Ref InternalALBTargetGroupArn
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub
+                  - arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${UpdateInternalALBTGLambda}:*
+                  - { UpdateInternalALBTGLambda: !Sub "${ProjectName}-${Environment}-update-internal-alb-tg-linked-ecs" }
