@@ -1,11 +1,9 @@
 name: Deploy CloudFormation Templates to S3
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize, ready_for_review]
-    branches-ignore:
-      - "release/**"
-      - "doc/**"
+  push:
+    branches:
+      - main
 
 env:
   WORKING_DIRECTORY: templates
@@ -15,7 +13,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Chekcout code
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
