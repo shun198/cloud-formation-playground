@@ -125,9 +125,11 @@ Parameters:
   CodeDeployApplicationName:
     Description: "Enter the CodeDeploy application name. (ex: shun198-dev-cdapp)"
     Type: String
+    Default: shun198-dev-cdapp
   CodeDeployDeploymentGroupName:
     Description: "Enter the CodeDeploy deployment group name. (ex: shun198-dev-cdg)"
     Type: String
+    Default: shun198-dev-cdg
   CodeDeployDeploymentConfigName:
     Description: "Enter the CodeDeploy deployment config name."
     Type: String
@@ -141,15 +143,19 @@ Parameters:
   ECSClusterName:
     Description: "Enter the ECS cluster name. (ex: shun198-dev-cluster)"
     Type: String
+    Default: shun198-dev-cluster
   ECSServiceName:
     Description: "Enter the ECS service name. (ex: shun198-dev-back-service)"
     Type: String
+    Default: shun198-dev-back-service
   ALBTargetGroupBlueName:
     Description: "Enter the ALB Target Group Name for Blue / Green Deployment. (ex: shun198-dev-blue-tg)"
     Type: String
+    Default: shun198-dev-blue-tg
   ALBTargetGroupGreenName:
     Description: "Enter the ALB Target Group Name for Blue / Green Deployment. (ex: shun198-dev-green-tg)"
     Type: String
+    Default: shun198-dev-green-tg
   ALBProductionListenerArn:
     Description: "Enter the ALB Production Listener ARN for Blue / Green Deployment."
     Type: String
