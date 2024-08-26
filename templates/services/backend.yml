@@ -97,24 +97,31 @@ Parameters:
   SourceBranchName:
     Description: "Enter the source branch name in GitHub backend repository. (ex: develop or main)"
     Type: String
+    Default: develop
   DjangoDockerfilePath:
     Description: "Enter the Django Dockerfile path in GitHub backend repository. (ex: containers/django/Dockerfile.dev)"
     Type: String
+    Default: containers/django/Dockerfile.dev
   NginxDockerfilePath:
     Description: "Enter the Nginx Dockerfile path in GitHub backend repository. (ex: containers/nginx/Dockerfile.dev)"
     Type: String
+    Default: containers/nginx/Dockerfile.dev
   TaskDefinitionTemplatePath:
     Description: "Enter the ECS Task Definition template path in GitHub backend repository. (ex: ecs/taskdef.dev.json)"
     Type: String
+    Default: ecs/taskdef.dev.json
   AppSpecTemplatePath:
     Description: "Enter the Codedeploy Appspec template path in GitHub backend repository. (ex: codedeploy/appspec.yml)"
     Type: String
+    Default: codedeploy/appspec.yml
   ECRBackendDjangoRepositoryName:
     Description: "Enter the ECR backend application repository name. (ex: shun198/dev/back/django)"
     Type: String
+    Default: shun198/dev/back/django
   ECRBackendNginxRepositoryName:
     Description: "Enter the ECR backend webserver repository name. (ex: shun198/dev/back/nginx)"
     Type: String
+    Default: shun198/dev/back/nginx
   CodeDeployApplicationName:
     Description: "Enter the CodeDeploy application name. (ex: shun198-dev-cdapp)"
     Type: String
@@ -130,6 +137,7 @@ Parameters:
       - CodeDeployDefault.ECSCanary10Percent5Minutes
       - CodeDeployDefault.ECSCanary10Percent15Minutes
       - CodeDeployDefault.ECSAllAtOnce
+    Default: CodeDeployDefault.ECSAllAtOnce
   ECSClusterName:
     Description: "Enter the ECS cluster name. (ex: shun198-dev-cluster)"
     Type: String
