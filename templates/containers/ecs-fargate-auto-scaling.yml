@@ -22,24 +22,26 @@ Metadata:
           - ServiceCPUScaleInThreshold
           - TaskMinContainerCount
           - TaskMaxContainerCount
+          - SNSWarningTopicName
 
 # -------------------------------------
-# Input parameters
+# Parameters
 # -------------------------------------
 Parameters:
   ProjectName:
     Description: "Enter the project name. (ex: shun198)"
     Type: String
     MinLength: 1
-    ConstraintDescription: "ProjectName must be enter."
+    ConstraintDescription: "ProjectName must be entered."
     Default: shun198
   Environment:
-    Description: "Select the environment."
+    Description: "Select a environment name."
     Type: String
     AllowedValues:
       - dev
       - stg
       - prd
+    ConstraintDescription: "Environment name must be selected."
   TargetECSClusterName:
     Description: "Enter the ECS cluster name for CloudWatch monitoring. (ex: shun198-dev-cluster)"
     Type: String
@@ -77,6 +79,10 @@ Parameters:
     Default: 2
     MinValue: 1
     ConstraintDescription: "TaskMaxContainerCount Value must be at least one."
+  SNSWarningTopicName:
+    Description: "SNS Topic name to notify scale in/out."
+    Type: String
+    Default: ai-warning
 
 # -------------------------------------
 # Resources
@@ -95,6 +101,7 @@ Resources:
             Principal:
               Service: application-autoscaling.amazonaws.com
             Action: sts:AssumeRole
+      Path: /service-role/
       Policies:
         - PolicyName: !Sub ECSServiceAutoScalingRoleAccess-${ProjectName}-${Environment}
           PolicyDocument:
@@ -158,6 +165,7 @@ Resources:
       Period: 60
       AlarmActions:
         - !Ref ServiceScaleOutPolicy
+        - !Sub arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${SNSWarningTopicName}
       Namespace: AWS/ECS
       Dimensions:
         - Name: ClusterName
@@ -179,6 +187,7 @@ Resources:
       Period: 300
       AlarmActions:
         - !Ref ServiceScaleInPolicy
+        - !Sub arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${SNSWarningTopicName}
       Namespace: AWS/ECS
       Dimensions:
         - Name: ClusterName

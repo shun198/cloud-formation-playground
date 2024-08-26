@@ -16,7 +16,7 @@ Metadata:
       - Label:
           default: "GitHub Configuration"
         Parameters:
-          - BackEndRepositoryName
+          - BackendRepositoryName
           - SourceBranchName
           - DjangoDockerfilePath
           - NginxDockerfilePath
@@ -25,8 +25,8 @@ Metadata:
       - Label:
           default: "CodeBuild Configuration"
         Parameters:
-          - ECRBackEndDjangoRepositoryName
-          - ECRBackEndNginxRepositoryName
+          - ECRBackendDjangoRepositoryName
+          - ECRBackendNginxRepositoryName
       - Label:
           default: "CodeDeploy Configuration"
         Parameters:
@@ -63,7 +63,7 @@ Parameters:
       - stg
       - prd
     ConstraintDescription: "Environment must be select."
-  BackEndRepositoryName:
+  BackendRepositoryName:
     Description: "Enter the target GitHub backend full repository name. (ex: shun198/cloud-formation-playground)"
     Type: String
     Default: shun198/cloud-formation-playground
@@ -95,11 +95,11 @@ Parameters:
     Description: "Enter the Codedeploy Appspec template path in GitHub backend repository. (ex: codedeploy/appspec.yml)"
     Type: String
     Default: codedeploy/appspec.yml
-  ECRBackEndDjangoRepositoryName:
+  ECRBackendDjangoRepositoryName:
     Description: "Enter the ECR backend application repository name. (ex: shun198/dev/back/django)"
     Type: String
     Default: shun198/dev/back/django
-  ECRBackEndNginxRepositoryName:
+  ECRBackendNginxRepositoryName:
     Description: "Enter the ECR backend webserver repository name. (ex: shun198/dev/back/nginx)"
     Type: String
     Default: shun198/dev/back/nginx
@@ -157,7 +157,7 @@ Resources:
     UpdateReplacePolicy: Retain
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      ManagedPolicyName: !Sub CodeBuildServiceRolePolicyForBackEnd-${ProjectName}-${Environment}
+      ManagedPolicyName: !Sub CodeBuildServiceRolePolicyForBackend-${ProjectName}-${Environment}
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -228,7 +228,7 @@ Resources:
     UpdateReplacePolicy: Retain
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub CodeBuildServiceRoleForBackEnd-${ProjectName}-${Environment}
+      RoleName: !Sub CodeBuildServiceRoleForBackend-${ProjectName}-${Environment}
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -245,7 +245,7 @@ Resources:
   CodeDeployServiceRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub CodeDeployServiceRoleForBackEnd-${ProjectName}-${Environment}
+      RoleName: !Sub CodeDeployServiceRoleForBackend-${ProjectName}-${Environment}
       Path: /service-role/
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -263,7 +263,7 @@ Resources:
     UpdateReplacePolicy: Retain
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      ManagedPolicyName: !Sub CodePipelineServiceRolePolicyForBackEnd-${ProjectName}-${Environment}
+      ManagedPolicyName: !Sub CodePipelineServiceRolePolicyForBackend-${ProjectName}-${Environment}
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -317,7 +317,7 @@ Resources:
     UpdateReplacePolicy: Retain
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub CodePipelineServiceRoleForBackEnd-${ProjectName}-${Environment}
+      RoleName: !Sub CodePipelineServiceRoleForBackend-${ProjectName}-${Environment}
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -363,9 +363,9 @@ Resources:
           version: 0.2
           batch:
             build-list:
-              - identifier: BuildBackEndDjangoArtifact
+              - identifier: BuildBackendDjangoArtifact
                 buildspec: codebuild/buildspec_django.yml
-              - identifier: BuildBackEndNginxArtifact
+              - identifier: BuildBackendNginxArtifact
                 buildspec: codebuild/buildspec_nginx.yml
       Environment:
         PrivilegedMode: true
@@ -386,9 +386,9 @@ Resources:
             Type: PARAMETER_STORE
             Value: !Sub /${ProjectName}/common/DOCKERHUB_USER
           - Name: ECR_DJANGO_REPOSITORY_URI
-            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRBackEndDjangoRepositoryName}
+            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRBackendDjangoRepositoryName}
           - Name: ECR_NGINX_REPOSITORY_URI
-            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRBackEndNginxRepositoryName}
+            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRBackendNginxRepositoryName}
           - Name: ENVIRONMENT
             Value: !Ref Environment
           - Name: DJANGO_DOCKERFILE_PATH
@@ -471,7 +471,7 @@ Resources:
                 Provider: CodeStarSourceConnection
                 Version: 1
               Configuration:
-                FullRepositoryId: !Ref BackEndRepositoryName
+                FullRepositoryId: !Ref BackendRepositoryName
                 ConnectionArn: !Ref CodeStarConnectionArn
                 BranchName: !Ref SourceBranchName
                 DetectChanges: true
@@ -494,8 +494,8 @@ Resources:
               InputArtifacts:
                 - Name: SourceArtifact
               OutputArtifacts:
-                - Name: BuildBackEndDjangoArtifact
-                - Name: BuildBackEndNginxArtifact
+                - Name: BuildBackendDjangoArtifact
+                - Name: BuildBackendNginxArtifact
         - Name: Deploy
           Actions:
             - Name: DeployAction
@@ -511,15 +511,15 @@ Resources:
                 TaskDefinitionTemplatePath: !Ref TaskDefinitionTemplatePath
                 ApplicationName: !Ref CodeDeployApplicationName
                 DeploymentGroupName: !Ref CodeDeployDeploymentGroupName
-                Image1ArtifactName: BuildBackEndDjangoArtifact
+                Image1ArtifactName: BuildBackendDjangoArtifact
                 Image1ContainerName: DJANGO_IMAGE_NAME
-                Image2ArtifactName: BuildBackEndNginxArtifact
+                Image2ArtifactName: BuildBackendNginxArtifact
                 Image2ContainerName: NGINX_IMAGE_NAME
               RunOrder: 1
               InputArtifacts:
                 - Name: SourceArtifact
-                - Name: BuildBackEndDjangoArtifact
-                - Name: BuildBackEndNginxArtifact
+                - Name: BuildBackendDjangoArtifact
+                - Name: BuildBackendNginxArtifact
               Region: !Ref AWS::Region
 
   # -------------------------------------
