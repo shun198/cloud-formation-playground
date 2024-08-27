@@ -207,7 +207,7 @@ Parameters:
   SNSWarningTopicName:
     Description: "SNS Topic name to notify scale in/out."
     Type: String
-    Default: ai-warning
+    Default: shun198-warning
 
 # -------------------------------------
 # Resources
