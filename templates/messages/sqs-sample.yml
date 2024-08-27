@@ -1,0 +1,89 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "SQS Stack For Lambda Function"
+
+# -------------------------------------
+# Metadata
+# -------------------------------------
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Project Configuration"
+        Parameters:
+          - ProjectName
+          - Environment
+      - Label:
+          default: "SQS Configuration"
+        Parameters:
+          - SQSQueueName
+
+# -------------------------------------
+# Parameters
+# -------------------------------------
+Parameters:
+  ProjectName:
+    Description: "Enter the project name (ex: shun198)"
+    Type: String
+    MinLength: 1
+    ConstraintDescription: "ProjectName must be entered"
+    Default: shun198
+  Environment:
+    Description: "Select the environment"
+    Type: String
+    AllowedValues:
+      - dev
+      - stg
+      - prd
+    ConstraintDescription: "Environment must be selected"
+  SQSQueueName:
+    Description: "Enter the queue name (ex: shun198-dev-sqs.fifo)"
+    Type: String
+  MessageRetentionPeriod:
+    Description: "Enter the time to hold messages as a queue (default: 3600)"
+    Type: Number
+    Default: 3600
+    MinValue: 60
+    MaxValue: 1209600
+    ConstraintDescription: "MessageRetentionPeriod must be entered between the values 60 - 1209600"
+
+# -------------------------------------
+# Resources
+# -------------------------------------
+Resources:
+  # For SQS
+  Queue:
+    Type: AWS::SQS::Queue
+    Properties:
+      FifoQueue: true
+      ContentBasedDeduplication: true
+      QueueName: !Ref SQSQueueName
+      MessageRetentionPeriod: !Ref MessageRetentionPeriod
+      Tags:
+        - Key: ProjectName
+          Value: !Ref ProjectName
+        - Key: Environment
+          Value: !Ref Environment
+  # For SQS Access Policy
+  QueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+              - sqs:ReceiveMessage
+              - sqs:DeleteMessage
+            Resource: !GetAtt Queue.Arn
+      Queues:
+        - !Ref Queue
+
+# -------------------------------------
+# Outputs
+# -------------------------------------
+Outputs:
+  QueueArn:
+    Value: !GetAtt Queue.Arn
+  QueueUrl:
+    Value: !Ref Queue
